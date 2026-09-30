@@ -61,6 +61,7 @@ PluginComponent {
     horizontalBarPill: Component {
         WindowStrip {
             windows: niri.currentWindows
+            workspaceId: niri.activeWorkspace?.id ?? null
             available: niri.available
             maximumWidth: navigation.stripWidth
             // Match the full-height horizontal BasePill.

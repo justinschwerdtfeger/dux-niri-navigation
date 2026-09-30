@@ -6,6 +6,8 @@ The horizontal widget shows app icons for windows on the workspace active on its
 
 The vertical widget is still a diagnostic workspace count across all outputs, including Niri's trailing empty workspace. Workspace buttons and custom icons are the next milestone.
 
+Switching workspaces fades and gently slides the new window tabs into place. The strip also eases its width as windows change, keeping each tab's proportional width and the hosting bar's width ceiling. Transitions follow DMS's animation speed setting and snap when animations are disabled. Visible animation in the running DMS session still needs verification.
+
 ## Intended behavior
 
 - Top bar: windows on the bar's current workspace, in Niri's layout order, with icons and window titles, stable proportional widths, and click-to-focus; floating windows are excluded.

@@ -9,6 +9,7 @@ Item {
     id: strip
 
     property var windows: []
+    property var workspaceId: null
     property bool available: false
     property real maximumWidth: 640
     property real buttonHeight: 30
@@ -21,9 +22,22 @@ Item {
     readonly property real gap: Theme.spacingXS
     readonly property var tabLayout: WindowModel.tabGeometry(windows, gap,
         Math.max(96, (buttonHeight + 24) * 1.5), referenceWidth)
+    property bool animationReady: false
+    property real tabOpacity: 1
+    property real tabOffset: 0
+    property real animatedContentWidth: tabLayout.totalWidth
+
+    Behavior on animatedContentWidth {
+        enabled: strip.animationReady && !Theme.snapListModelChanges
+        NumberAnimation {
+            duration: Theme.shortDuration
+            easing.type: Theme.standardEasing
+        }
+    }
+
     readonly property real controlWidth: buttonHeight
     readonly property var stripLayout: WindowModel.stripGeometry(
-        tabLayout.totalWidth, maximumWidth, controlWidth, gap)
+        animatedContentWidth, maximumWidth, controlWidth, gap)
     // The host may assign less width than our implicit request.
     readonly property bool showArrows: WindowModel.stripGeometry(
         tabLayout.totalWidth, width, controlWidth, gap).showArrows
@@ -31,6 +45,43 @@ Item {
     readonly property var activeWindowId: activeIndex >= 0 ? windows[activeIndex].id : null
     // Manual browsing lasts until focus changes, even as DMS replaces snapshots.
     property bool followActive: true
+
+    function animateWorkspace() {
+        workspaceEnter.stop();
+        tabOpacity = 1;
+        tabOffset = 0;
+        hideTooltip(null);
+        if (!animationReady || !available || workspaceId === null
+                || !windows.length || Theme.snapListModelChanges)
+            return;
+        // The live model changes immediately; never delay focus or queue switches.
+        tabOpacity = 0;
+        tabOffset = Math.min(8, buttonHeight * 0.2);
+        workspaceEnter.start();
+    }
+
+    onWorkspaceIdChanged: {
+        if (animationReady)
+            Qt.callLater(animateWorkspace);
+    }
+
+    ParallelAnimation {
+        id: workspaceEnter
+        NumberAnimation {
+            target: strip
+            property: "tabOpacity"
+            to: 1
+            duration: Theme.shortDuration
+            easing.type: Theme.standardEasing
+        }
+        NumberAnimation {
+            target: strip
+            property: "tabOffset"
+            to: 0
+            duration: Theme.shortDuration
+            easing.type: Theme.standardEasing
+        }
+    }
 
     signal windowActivated(var windowId)
     signal launcherRequested()
@@ -72,7 +123,7 @@ Item {
 
     function showTooltip(anchor) {
         if (!parentScreen || viewport.moving || !anchor.hovered
-                || !anchor.enabled || !anchor.tooltip.length)
+                || workspaceEnter.running || !anchor.enabled || !anchor.tooltip.length)
             return;
         tooltipAnchor = anchor;
         tooltipLoader.active = true;
@@ -130,12 +181,14 @@ Item {
     }
     onTabLayoutChanged: Qt.callLater(revealActive)
     Component.onCompleted: {
-        console.info("Justin Navigation: wheel input loaded (no cooldown, 120 angle units per step)");
+        animationReady = true;
+        console.info("Justin Navigation: workspace transitions loaded; wheel input has no cooldown, 120 angle units per step");
         Qt.callLater(revealActive);
     }
 
     Flickable {
         id: viewport
+        opacity: strip.tabOpacity
         visible: strip.windows.length > 0
         anchors.left: parent.left
         anchors.top: parent.top
@@ -159,6 +212,7 @@ Item {
 
         Row {
             spacing: strip.gap
+            transform: Translate { y: strip.tabOffset }
 
             Repeater {
                 model: strip.windows

@@ -20,6 +20,8 @@ The inspected launcher APIs choose the globally focused output and take no scree
 
 Buttons use the hosting bar’s full `barThickness`, centered by DMS’s unclipped content loader. A scoped binding sets the horizontal host pill’s `widgetThickness` to `barThickness`, so its background and outline also fill the height. The host pill is identified by its content component rather than child order; vertical instances retain DMS sizing. The DMS Size control sets bar height, whereas widget padding is horizontal for this plugin.
 
+Workspace changes on the hosting output trigger a short fade and upward settle of the incoming horizontal tabs, keyed by the active workspace's session-local Niri ID. The live window model and focus update immediately; rapid switches restart the entrance rather than queueing transitions. Title, focus, and layout snapshots within one workspace do not restart the entrance. The natural content width eases separately, retaining independent tab widths and applying the hosting width ceiling immediately. Empty workspaces settle to the launcher-only strip. Animation duration and easing use DMS's theme, including its disabled-animation setting. The launcher and overflow controls do not fade or slide.
+
 ## Workspace rail
 
 Show the output's workspaces in Niri order. Preserve normal dynamic workspace behavior, including the trailing empty workspace. An ordinary empty workspace can remain while active; do not forcibly delete workspaces or equate every empty workspace with an immediately removed one.
