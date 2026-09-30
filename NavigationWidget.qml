@@ -22,6 +22,23 @@ PluginComponent {
         restoreMode: Binding.RestoreBindingOrValue
     }
 
+    // Like DMS RunningApps, only the individual buttons are interactive.
+    Binding {
+        target: navigation.horizontalPillHost
+        property: "enableBackgroundHover"
+        value: false
+        when: navigation.horizontalPillHost !== null && !navigation.isVertical
+        restoreMode: Binding.RestoreBindingOrValue
+    }
+
+    Binding {
+        target: navigation.horizontalPillHost
+        property: "enableCursor"
+        value: false
+        when: navigation.horizontalPillHost !== null && !navigation.isVertical
+        restoreMode: Binding.RestoreBindingOrValue
+    }
+
     readonly property real pillPadding: (barConfig?.removeWidgetPadding ?? false)
         ? 0 : (barConfig?.widgetPadding ?? 12) * ((isVertical ? widgetThickness : barThickness) / 30)
     BarGeometry {
@@ -49,6 +66,9 @@ PluginComponent {
             // Match the full-height horizontal BasePill.
             buttonHeight: navigation.barThickness
             referenceWidth: navigation.parentScreen?.width ?? 1920
+            parentScreen: navigation.parentScreen
+            barEdge: navigation.axis?.edge ?? "top"
+            barSpacing: navigation.barSpacing
             onWindowActivated: windowId => niri.focusWindow(windowId)
             // DMS chooses the launcher's output; this API does not accept a screen.
             onLauncherRequested: PopoutService.openDankLauncherV2()

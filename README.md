@@ -2,7 +2,7 @@
 
 A DMS plugin project for Material Shell-inspired navigation on Niri: window icons and titles across the top and workspace icons down the left.
 
-The horizontal widget shows app icons for windows on the workspace active on its monitor, ordered by Niri's layout. Each tab shows its icon and the window's own title, without an added application name. Width follows the window's visual width at a stable monitor-based scale; small tabs have a readability minimum. Long titles elide, with the full title on hover. Click an icon to focus its window; use the arrows or drag the strip to reach overflow, and click **+** to open DMS's launcher. Manual overflow browsing stays in place across state updates until the active window changes. Floating windows are excluded; tiled windows without layout positions follow positioned windows in ID order. Both arrows sit on the right before **+**. Arrows appear only when the strip reaches its width ceiling and overflows. With no tiled windows, only **+** is shown.
+The horizontal widget shows app icons for windows on the workspace active on its monitor, ordered by Niri's layout. Each tab shows its icon and the window's own title, without an added application name. Width follows the window's visual width at a stable monitor-based scale; small tabs have a readability minimum. Long titles elide; hovering shows the application name and window title in a native DMS tooltip, which uses DMS’s single-line width limit. Click an icon to focus its window; use the arrows or drag the strip to reach overflow, and click **+** to open DMS's launcher. Manual overflow browsing stays in place across state updates until the active window changes. Floating windows are excluded; tiled windows without layout positions follow positioned windows in ID order. Both arrows sit on the right before **+**. Arrows appear only when the strip reaches its width ceiling and overflows. With no tiled windows, only **+** is shown.
 
 The vertical widget is still a diagnostic workspace count across all outputs, including Niri's trailing empty workspace. Workspace buttons and custom icons are the next milestone.
 
@@ -30,7 +30,7 @@ This creates a development symlink, so DMS reads edits directly from this reposi
 
 In DMS Settings → Plugins, scan for plugins, enable **Justin Navigation**, then add it to a **horizontal** DankBar widget list. Start with a mostly empty bar section. **Allow full-width growth** is enabled by default: the strip grows with its window count up to the hosting bar’s available content width, reserving the actual pill padding, other widgets, and gaps. It does not stretch a short list to fill the bar. For crowded bars, disable this option and set a pixel maximum (default 640, range 240–7680). On the inspected DMS 1.6.2 host, the plugin subtracts other widgets in its section and reserves occupied neighboring sections. Empty center containers do not cap growth. A short list still uses only its natural width.
 
-Buttons use the full DMS bar height. In **Settings → DankBar**, select the bar and adjust **Size** to change its height. **Padding** and **Remove Widget Padding** control horizontal padding around this plugin, not its button height. The horizontal pill background and outline also fill the bar height.
+Application icons use 85% of the available icon slot; arrows and plus retain their size. Hover and press highlighting applies to individual buttons. Buttons use the full DMS bar height. In **Settings → DankBar**, select the bar and adjust **Size** to change its height. **Padding** and **Remove Widget Padding** control horizontal padding around this plugin, not its button height. The horizontal pill background and outline also fill the bar height.
 
 After edits, use the plugin's **Reload** button in Settings → Plugins, or:
 
@@ -52,7 +52,7 @@ An optional setup script generates local DMS imports for VS Code. Install the of
 make check
 ```
 
-Requires Python 3 and Node.js. This validates packaging, checks the setup script's syntax, runs window-model and tooling recovery tests, checks the link script's syntax, and checks patch whitespace. It does not compile QML. Earlier widget versions were loaded in DMS 1.6.2 and screenshots confirmed rendering. The latest floating-window filtering, conditional arrows, wider tabs, full-height buttons, and plus-only empty state still need live visual verification. Click, overflow, and launcher interaction checks remain. See [development notes](docs/DEVELOPMENT.md).
+Requires Python 3 and Node.js. This validates packaging, checks the setup script's syntax, runs window-model and tooling recovery tests, checks the link script's syntax, and checks patch whitespace. It does not compile QML. Earlier widget versions were loaded in DMS 1.6.2 and screenshots confirmed rendering. The latest layout, native tooltips, hover behavior, and smaller application icons still need live visual verification. Click, overflow, and launcher interaction checks remain. See [development notes](docs/DEVELOPMENT.md).
 
 ## Project map
 

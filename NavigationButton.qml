@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import Quickshell
 import Quickshell.Widgets
 import qs.Common
@@ -11,10 +10,14 @@ Rectangle {
     property string text: ""
     property string appId: ""
     property bool showAppIcon: false
-    readonly property string iconSource: showAppIcon ? Paths.getAppIcon(appId,
-        DesktopEntries.heuristicLookup(Paths.moddedAppId(appId))) : ""
+    readonly property var desktopEntry: showAppIcon && appId
+        ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId)) : null
+    readonly property string applicationName: showAppIcon && appId
+        ? Paths.getAppName(appId, desktopEntry) : ""
+    readonly property string iconSource: showAppIcon
+        ? Paths.getAppIcon(appId, desktopEntry) : ""
     readonly property int appIconSize: Math.max(12,
-        Math.floor(Math.min(height - 6, width - 8)))
+        Math.floor(Math.min(height - 6, width - 8) * 0.85))
     property bool selected: false
     property bool urgent: false
     property string tooltip: text
@@ -24,8 +27,10 @@ Rectangle {
     Accessible.name: tooltip
     Accessible.role: Accessible.Button
     Accessible.onPressAction: {
-        if (button.enabled)
+        if (button.enabled) {
+            button.dismissTooltip();
             button.clicked();
+        }
     }
     opacity: enabled ? 1 : 0.4
     radius: Math.min(Theme.cornerRadius, height / 2)
@@ -35,6 +40,21 @@ Rectangle {
     border.color: Theme.primary
 
     signal clicked()
+    signal tooltipRequested(var anchor)
+    signal tooltipDismissed(var anchor)
+
+    function dismissTooltip() {
+        hoverDelay.stop();
+        tooltipDismissed(button);
+    }
+
+    onEnabledChanged: { if (!enabled) dismissTooltip(); }
+    onVisibleChanged: { if (!visible) dismissTooltip(); }
+    onTooltipChanged: {
+        if (hovered && enabled && !hoverDelay.running && !down)
+            tooltipRequested(button);
+    }
+    Component.onDestruction: tooltipDismissed(button)
 
     // Match DMS's focused-window icon path. AppIconRenderer's "image:"
     // prefix handling conflicts with Quickshell's image://icon provider URLs.
@@ -86,18 +106,18 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        onEntered: hoverDelay.restart()
+        onExited: button.dismissTooltip()
+        onPressed: button.dismissTooltip()
         onClicked: button.clicked()
     }
 
-    ToolTip {
-        id: help
-        visible: button.hovered && button.enabled && button.tooltip.length > 0
-        text: button.tooltip
-        delay: 500
-        contentItem: StyledText {
-            text: help.text
-            textFormat: Text.PlainText
-            wrapMode: Text.Wrap
+    Timer {
+        id: hoverDelay
+        interval: 500
+        onTriggered: {
+            if (button.hovered && button.enabled && button.tooltip.length > 0)
+                button.tooltipRequested(button);
         }
     }
 }

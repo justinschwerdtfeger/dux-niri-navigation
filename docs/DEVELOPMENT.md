@@ -127,3 +127,17 @@ Live feedback exposed both incomplete width ceilings: the monitor cap ignored th
 The adapter finds the containing section and layout through named section ancestors and the layout's `widgetSpacing`. It reads the stack content width (already excluding host margins), other visible delegates' widths, occupied adjacent sections, and the actual snapped `BasePill.horizontalPadding`. It excludes the plugin's own section width to avoid a sizing feedback loop. `CenterSection.width` spans the bar even when empty, so occupancy uses `contentStart`/`contentSize`. A centered plugin uses a symmetric midpoint budget; unusual index-centering configurations and multiple growing plugin instances require additional live checks. Insufficient space for even the launcher remains a host layout limitation.
 
 Twenty model tests include sibling reservation, empty center handling, exact zero-inset growth, and occupied neighboring sections. An offscreen QML helper instantiated the actual adapter with a representative host layout and verified reactive music appearance/removal, monitor resizing, and center/right occupancy without binding loops. It instantiated no DMS services; its sandbox-blocked IPC socket was unrelated to the successful assertions and the helper was terminated afterward. `make check` passes. Live rendering still requires confirmation after reload; no shell restart or desktop configuration edits were performed.
+
+
+## Hover, native tooltip, and application icon update
+
+Inspected the active DMS 1.6.2 `BasePill`, `RunningApps`, `DankTooltip`, and the DankCommon `StyledText`. The plugin applies scoped bindings to the horizontal pill’s `enableBackgroundHover` and `enableCursor`, restoring the host values for vertical orientation. Buttons continue to style their own hover/pressed states.
+
+`NavigationButton` replaces Qt Controls ToolTip with delayed tooltip-request/dismissal signals. `WindowStrip` owns a shared lazy `DankTooltip` loader and passes the hosting screen, bar edge, and spacing using the inspected native `show(text, x, y, screen, leftAlign, rightAlign)` API. Top/bottom placement follows RunningApps; native tooltip text is plain text and elides at its built-in width cap. Application icon size is multiplied by 0.85; control glyph sizes are unchanged.
+
+`make check` passes. An isolated offscreen QML helper loaded the changed button/strip logic with stub DMS visuals and tooltip, verifying reduced icon size, dismissal on disable, tooltip ownership, scroll dismissal, and top/bottom placement. Its sandbox-blocked IPC socket did not affect those assertions; it was terminated afterward. This does not verify native tooltip rendering, mouse hover timing, auto-hide/frame-bar placement, or visible hover color in the running DMS session. Helper caching may require an authorized shell restart if reload retains old QML; no restart or desktop configuration edits were performed.
+
+
+## Application name in hover text
+
+Window tooltips now show `Application name • Window title`; tab labels remain title-only. Inspected DMS 1.6.2 `Paths.getAppName(appId, desktopEntry)` and FocusedApp's use of `DesktopEntries.heuristicLookup(Paths.moddedAppId(appId))`. The button reuses one desktop-entry lookup for the icon and application name. DMS falls back to the app ID if no desktop name resolves; absent app identity leaves just the window title. Arrow and launcher tooltips retain their action labels. `make check` passes; live hover appearance still needs session verification.
