@@ -11,6 +11,13 @@ PluginSettings {
         defaultValue: true
     }
 
+    ToggleSetting {
+        settingKey: "reverseScroll"
+        label: "Reverse scroll direction"
+        description: "Invert DMS's scroll direction when navigating Niri columns over this widget."
+        defaultValue: true
+    }
+
     SliderSetting {
         settingKey: "maximumWidth"
         label: "Window strip width"

@@ -69,6 +69,8 @@ PluginComponent {
             parentScreen: navigation.parentScreen
             barEdge: navigation.axis?.edge ?? "top"
             barSpacing: navigation.barSpacing
+            reverseScroll: navigation.pluginData.reverseScroll !== false
+            onColumnScrollRequested: direction => niri.scrollColumn(direction)
             onWindowActivated: windowId => niri.focusWindow(windowId)
             // DMS chooses the launcher's output; this API does not accept a screen.
             onLauncherRequested: PopoutService.openDankLauncherV2()

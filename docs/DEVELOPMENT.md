@@ -14,7 +14,7 @@ The explicitly requested desktop configuration audit is recorded in [Configurati
 
 ## API boundary
 
-`NiriState.qml` reads `CompositorService.isNiri`, `NiriService.windows`, and `NiriService.allWorkspaces`, and calls `NiriService.focusWindow(id)`. These names exist in both inspected sources. It passes snapshots into pure functions in `WindowModel.js`. DMS's internal singleton services are not assumed to be stable public plugin APIs.
+`NiriState.qml` reads `CompositorService.isNiri`, `NiriService.windows`, and `NiriService.allWorkspaces`, and calls `NiriService.focusWindow(id)` plus `moveColumnLeft(outputName)`/`moveColumnRight(outputName)` for wheel navigation. These names exist in both inspected sources. It passes snapshots into pure functions in `WindowModel.js`. DMS's internal singleton services are not assumed to be stable public plugin APIs.
 
 Before expanding the adapter, inspect:
 
@@ -40,7 +40,7 @@ After manually loading the plugin in an existing DMS/Niri session:
 
 Later navigation milestones also need multi-monitor filtering, window reorder/title changes, floating windows, long-title overflow, and icon cleanup checks.
 
-`make check` covers packaging validation, Python and link-script syntax, whitespace checks, twenty pure window-model tests, and eight tooling tests. Window-model tests cover output selection, workspace filtering, layout order, malformed/missing positions, floating-window exclusion/toggles, strip growth and arrow thresholds, title fallbacks, active state, urgency, changing snapshots, proportional geometry, and scroll offsets. Tooling tests cover successful repeated refresh, read-only embedded sources, persistent imports, preserved editor settings, overlapping paths, missing sources, scanner failure/timeout, and publication rollback.
+`make check` covers packaging validation, Python and link-script syntax, whitespace checks, twenty-five pure window-model tests, and eight tooling tests. Window-model tests cover output selection, workspace filtering, layout order, malformed/missing positions, floating-window exclusion/toggles, strip growth and arrow thresholds, title fallbacks, active state, urgency, changing snapshots, proportional geometry, and scroll offsets. Tooling tests cover successful repeated refresh, read-only embedded sources, persistent imports, preserved editor settings, overlapping paths, missing sources, scanner failure/timeout, and publication rollback.
 
 Earlier windowless compilation checks established QML component readiness only. Current verification includes live DMS loading and screenshots of populated/empty monitor bars. Click-to-focus, launcher clicks, tooltip behavior, and overflow interaction still need the acceptance checks above; rendering evidence does not establish those interactions.
 
@@ -141,3 +141,32 @@ Inspected the active DMS 1.6.2 `BasePill`, `RunningApps`, `DankTooltip`, and the
 ## Application name in hover text
 
 Window tooltips now show `Application name • Window title`; tab labels remain title-only. Inspected DMS 1.6.2 `Paths.getAppName(appId, desktopEntry)` and FocusedApp's use of `DesktopEntries.heuristicLookup(Paths.moddedAppId(appId))`. The button reuses one desktop-entry lookup for the icon and application name. DMS falls back to the app ID if no desktop name resolves; absent app identity leaves just the window title. Arrow and launcher tooltips retain their action labels. `make check` passes; live hover appearance still needs session verification.
+
+
+## Niri wheel navigation
+
+Inspected active DMS 1.6.2 `BarScrollArea.qml` and `NiriService.qml`: despite their names, `moveColumnLeft`/`moveColumnRight` send `FocusColumnLeft`/`FocusColumnRight`, focusing the supplied output first when needed. Only `NiriState.qml` calls these services. The strip emits `columnScrollRequested`, consumes wheel events, dismisses tooltips, and applies DMS wheel thresholds, direction preference, and cooldown. Pure model tests cover both axes, reversed direction, smooth accumulation, pixel-only input, and device/axis changes.
+
+`make check` passes. An isolated QML helper with stub visuals verified wheel request emission, accepted-event handling, cooldown, and the non-Niri guard; it made no compositor calls. Native wheel delivery, click/drag passthrough, multi-monitor focus changes, column boundaries/stacks, and touchpad feel remain for live session validation. No shell restart or desktop configuration changes were performed.
+
+
+The widget’s wheel direction was subsequently reversed at the user’s request: up/left advances and down/right goes back, before applying DMS reverse scrolling. Direction tests were updated for both axes, smooth input, and the DMS preference. `make check` passes; no global settings were changed.
+
+
+## Configurable scroll direction
+
+`NavigationSettings` adds DMS's inspected `ToggleSetting` with key `reverseScroll` and default true. `NavigationWidget` passes the reactive saved value to the strip, treating an absent setting as true to preserve the current direction. Changing the toggle clears accumulated input. The model applies this widget preference on top of DMS's global reverse-scrolling setting. Tests cover both preferences for mouse, horizontal, smooth, and pixel-only input; `make check` passes. Saving/toggling in the live settings UI remains to be verified.
+
+
+## Unthrottled wheel navigation
+
+Removed the 100 ms cooldown at the user’s request. Every complete wheel step is dispatched synchronously, including multiple steps in a single coalesced event; partial remainder is preserved instead of discarded. Existing mouse/touchpad distance thresholds and the direction option remain. A regression verifies fifty consecutive wheel events, multi-step events, and angle/pixel remainders. `make check` passes. An isolated QML helper also verified fifty immediate request emissions, three requests from one coalesced event, and changing the direction option. It used stub visuals and made no compositor calls. Actual focus speed remains subject to Niri/DMS processing; live rapid scrolling still needs verification.
+
+
+## Rapid wheel follow-up and helper cache
+
+The user reported that rapid mouse-wheel input still missed steps, while their Super+wheel Niri binding worked. Inspection found the earlier input classifier raised its threshold to 500 angle units whenever pixel metadata appeared. It now consistently uses 120 angle units per step and keeps accumulated angle input when that metadata changes; tests cover three consecutive mixed-metadata notches and zero-delta events.
+
+Rechecked the active DMS `NiriService.send` and `DankSocket.send`: they directly write requests without a debounce. Inspected [Niri 26.04 IPC server](https://github.com/niri-wm/niri/blob/v26.04/src/ipc/server.rs) and [column focus implementation](https://github.com/niri-wm/niri/blob/v26.04/src/layout/scrolling.rs): the server processes requests in order, and column activation changes its index directly rather than waiting for animations. This does not establish live wheel delivery.
+
+Added a one-time strip startup log stating the no-cooldown/120-angle-unit behavior to distinguish actual helper loading from successful plugin reload. A live plugin reload returned success on 2026-09-30 at 18:02 America/Chicago, but logs showed no new startup marker. The running helper remained cached. The user explicitly authorized one restart of the existing DMS service. After the restart at 18:09 America/Chicago, `dms.service` was active and both horizontal instances logged the new no-cooldown/120-angle-unit startup marker. No plugin QML errors or binding loops appeared in the startup logs. This verifies the updated helper loaded, not physical wheel delivery; rapid mouse-wheel behavior still needs user confirmation. No compositor settings or Niri keybindings were changed.

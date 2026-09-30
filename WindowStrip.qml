@@ -16,6 +16,7 @@ Item {
     property var parentScreen: null
     property string barEdge: "top"
     property real barSpacing: 0
+    property bool reverseScroll: true
     property var tooltipAnchor: null
     readonly property real gap: Theme.spacingXS
     readonly property var tabLayout: WindowModel.tabGeometry(windows, gap,
@@ -33,6 +34,35 @@ Item {
 
     signal windowActivated(var windowId)
     signal launcherRequested()
+    signal columnScrollRequested(int direction)
+    property var wheelState: ({ axis: "", source: "", value: 0 })
+
+    onReverseScrollChanged: {
+        wheelState = { axis: "", source: "", value: 0 };
+    }
+
+    function handleWheel(wheel) {
+        if (!available) {
+            wheel.accepted = false;
+            return;
+        }
+        // Consume wheel input so DMS cannot also switch workspaces.
+        wheel.accepted = true;
+        hideTooltip(null);
+        wheelState = WindowModel.wheelNavigation(wheelState,
+            wheel.angleDelta.x, wheel.angleDelta.y,
+            wheel.pixelDelta?.x ?? 0, wheel.pixelDelta?.y ?? 0,
+            SettingsData.reverseScrolling, reverseScroll);
+        for (let step = 0; step < wheelState.steps; step++)
+            columnScrollRequested(wheelState.direction);
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        z: 10
+        acceptedButtons: Qt.NoButton
+        onWheel: wheel => strip.handleWheel(wheel)
+    }
 
     implicitHeight: buttonHeight
     implicitWidth: stripLayout.width
@@ -73,7 +103,10 @@ Item {
     }
 
     onVisibleChanged: { if (!visible) hideTooltip(null); }
-    onParentScreenChanged: hideTooltip(null)
+    onParentScreenChanged: {
+        hideTooltip(null);
+        wheelState = { axis: "", source: "", value: 0 };
+    }
 
     function scrollBy(amount) {
         hideTooltip(null);
@@ -96,7 +129,10 @@ Item {
         Qt.callLater(revealActive);
     }
     onTabLayoutChanged: Qt.callLater(revealActive)
-    Component.onCompleted: Qt.callLater(revealActive)
+    Component.onCompleted: {
+        console.info("Justin Navigation: wheel input loaded (no cooldown, 120 angle units per step)");
+        Qt.callLater(revealActive);
+    }
 
     Flickable {
         id: viewport

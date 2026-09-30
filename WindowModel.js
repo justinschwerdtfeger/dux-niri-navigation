@@ -82,6 +82,26 @@ function barWidthBudget(barWidth, section, leftWidth, centerStart, centerWidth,
         - siblingWidths.length * gap - padding * 2));
 }
 
+// One angle-based notch is always 120 units, even with accompanying pixel data.
+function wheelNavigation(previous, angleX, angleY, pixelX, pixelY, reverse, reverseWidget = true) {
+    const hasAngle = angleX !== 0 || angleY !== 0;
+    const axis = Math.abs(hasAngle ? angleX : pixelX) > Math.abs(hasAngle ? angleY : pixelY) ? "x" : "y";
+    const angle = axis === "x" ? angleX : angleY;
+    const pixel = axis === "x" ? pixelX : pixelY;
+    // Mouse and touchpad angle deltas share units. Switching pixel metadata
+    // must not reset partial angle progress or raise the threshold.
+    const source = angle !== 0 ? "angle" : pixel !== 0 ? "pixel" : previous.source;
+    const delta = source === "pixel" ? pixel : angle;
+    const threshold = source === "pixel" ? 50 : 120;
+    const value = (previous.axis === axis && previous.source === source ? previous.value : 0) + delta;
+    const steps = Math.floor(Math.abs(value) / threshold);
+    const direction = steps
+        ? (value * (reverse ? -1 : 1) < 0 ? 1 : -1) * (reverseWidget ? -1 : 1) : 0;
+    // Retain partial input and every complete step from coalesced wheel events.
+    const remainder = value - Math.sign(value) * steps * threshold;
+    return { axis: axis, source: source, value: remainder, direction: direction, steps: steps };
+}
+
 function scrollPosition(layout, activeIndex, offset, viewportWidth, revealActive) {
     const maxOffset = Math.max(0, layout.totalWidth - viewportWidth);
     let next = Math.max(0, Math.min(maxOffset, offset));

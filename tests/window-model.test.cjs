@@ -200,3 +200,87 @@ test('occupied adjacent sections constrain growth on the correct side', () => {
     assert.equal(model.barWidthBudget(1920, 'center', 200, 0, 0, 300, [48], 4, 10), 1240);
     assert.equal(model.barWidthBudget(100, 'left', 0, 0, 0, 90, [48], 4, 10), 0);
 });
+
+
+test('wheel navigation uses either axis, reversed widget direction, and DMS reverse scrolling', () => {
+    const empty = { axis: '', source: '', value: 0 };
+    assert.equal(model.wheelNavigation(empty, 0, -120, 0, 0, false).direction, -1);
+    assert.equal(model.wheelNavigation(empty, 0, 120, 0, 0, false).direction, 1);
+    assert.equal(model.wheelNavigation(empty, -120, 10, 0, 0, false).direction, -1);
+    assert.equal(model.wheelNavigation(empty, 0, -120, 0, 0, true).direction, 1);
+    assert.equal(model.wheelNavigation(empty, 0, 0, 0, 0, false).direction, 0);
+});
+
+test('wheel navigation accumulates smooth input and resets across unit or axis changes', () => {
+    const empty = { axis: '', source: '', value: 0 };
+    let state = model.wheelNavigation(empty, 0, -60, 0, 0, false);
+    assert.equal(state.direction, 0);
+    state = model.wheelNavigation(state, 0, -60, 0, 0, false);
+    assert.equal(state.direction, -1);
+    assert.equal(state.value, 0);
+    state = model.wheelNavigation(empty, 0, -60, 0, -20, false);
+    assert.equal(state.direction, 0);
+    assert.equal(model.wheelNavigation(state, 0, -60, 0, -20, false).direction, -1);
+    assert.equal(model.wheelNavigation(state, -60, 0, 0, 0, false).direction, 0);
+    state = model.wheelNavigation(empty, 0, 0, 0, -25, false);
+    assert.equal(state.direction, 0);
+    assert.equal(model.wheelNavigation(state, 0, 0, 0, -25, false).direction, -1);
+});
+
+
+test('widget scroll option defaults to reversed and composes with the DMS preference', () => {
+    const empty = { axis: '', source: '', value: 0 };
+    for (const dmsReverse of [false, true]) {
+        for (const deltas of [[0, -120, 0, 0], [-120, 0, 0, 0], [0, -500, 0, -20], [0, 0, 0, -50]]) {
+            const current = model.wheelNavigation(empty, ...deltas, dmsReverse);
+            const reversed = model.wheelNavigation(empty, ...deltas, dmsReverse, true);
+            const normal = model.wheelNavigation(empty, ...deltas, dmsReverse, false);
+            assert.equal(reversed.direction, current.direction);
+            assert.equal(normal.direction, -reversed.direction);
+            assert.equal(normal.direction, dmsReverse ? -1 : 1);
+        }
+    }
+});
+
+
+test('fast and coalesced scrolling preserves every full step and partial remainder', () => {
+    const empty = { axis: '', source: '', value: 0 };
+    let state = empty;
+    let steps = 0;
+    for (let event = 0; event < 50; event++) {
+        state = model.wheelNavigation(state, 0, -120, 0, 0, false);
+        steps += state.steps;
+    }
+    assert.equal(steps, 50);
+    state = model.wheelNavigation(empty, 0, -390, 0, 0, false);
+    assert.equal(state.steps, 3);
+    assert.equal(state.value, -30);
+    state = model.wheelNavigation(state, 0, -90, 0, 0, false);
+    assert.equal(state.steps, 1);
+    assert.equal(state.value, 0);
+    const smooth = model.wheelNavigation(empty, 0, 1200, 0, 100, false);
+    assert.equal(smooth.steps, 10);
+    assert.equal(smooth.value, 0);
+    const pixels = model.wheelNavigation(empty, 0, 0, 0, -125, false);
+    assert.equal(pixels.steps, 2);
+    assert.equal(pixels.value, -25);
+});
+
+
+test('three rapid wheel notches count three times even when pixel metadata changes', () => {
+    let state = { axis: '', source: '', value: 0 };
+    let steps = 0;
+    for (const pixels of [0, -15, -30]) {
+        state = model.wheelNavigation(state, 0, 120, 0, pixels, false);
+        steps += state.steps;
+        assert.equal(state.steps, 1);
+    }
+    assert.equal(steps, 3);
+    assert.equal(state.value, 0);
+    state = model.wheelNavigation({ axis: '', source: '', value: 0 }, 0, 60, 0, 0, false);
+    const quiet = model.wheelNavigation(state, 0, 0, 0, 0, false);
+    assert.equal(quiet.value, 60);
+    state = model.wheelNavigation(quiet, 0, 60, 0, 5, false);
+    assert.equal(state.steps, 1);
+    assert.equal(state.value, 0);
+});

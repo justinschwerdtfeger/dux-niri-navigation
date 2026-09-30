@@ -14,6 +14,16 @@ QtObject {
     readonly property var activeWorkspace: WindowModel.activeWorkspace(workspaces, outputName)
     readonly property var currentWindows: WindowModel.workspaceWindows(windows, activeWorkspace)
 
+    function scrollColumn(direction) {
+        if (!available || !outputName || !activeWorkspace || direction === 0)
+            return;
+        // DMS focuses this output first when it is not the current output.
+        if (direction > 0)
+            NiriService.moveColumnRight(outputName);
+        else
+            NiriService.moveColumnLeft(outputName);
+    }
+
     function focusWindow(windowId) {
         // Recheck membership in case an old delegate was clicked during an update.
         if (available && currentWindows.some(window => window.id === windowId))
