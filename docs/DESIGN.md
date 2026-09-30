@@ -54,7 +54,7 @@ Use DMS `Paths.getAppIcon`, desktop-entry lookup, and Quickshell `IconImage` (as
 
 Use Niri `layout.tile_size[0]` (visual width including compositor decorations), falling back to `window_size[0]` if necessary. Width data remains in the Niri adapter's pure model. Floating windows do not enter the strip model.
 
-Use a fixed scale of 270 tab pixels per monitor-width window. Each tab independently has a readability minimum of 96 pixels (or 1.5 times button height plus 24 if larger). Tiny tabs therefore depart from exact ratios, but adding, shrinking, or removing one window never changes another window's width. Missing geometry uses a monitor-wide fallback, also independent of the list. The prior average/minimum-based shared scale caused unrelated tabs to expand and must not be restored.
+Use a configurable scale, defaulting to 240 tab pixels per monitor-width window. The plugin’s Window tab width slider allows 120–480 pixels and adjusts existing tabs reactively. Each tab independently has a readability minimum of 96 pixels (or 1.5 times button height plus 24 if larger). Tiny tabs therefore depart from exact ratios, but adding, shrinking, or removing one window never changes another window's width. Missing geometry uses a monitor-wide fallback, also independent of the list. The prior average/minimum-based shared scale caused unrelated tabs to expand and must not be restored.
 
 Recalculate scroll offsets from accumulated variable widths, and reveal the active tab after geometry changes. Overflow scrolls within the configured strip ceiling. Stacked windows in one column appear as separate tabs with their individual widths; this is not a two-dimensional layout map.
 

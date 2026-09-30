@@ -71,20 +71,20 @@ test('carries app identity and visual width, preferring decorated tile geometry'
 
 test('sizes tabs proportionally with a stable monitor scale and variable scroll positions', () => {
     const layout = plain(model.tabGeometry([{ visualWidth: 600 }, { visualWidth: 1200 }], 4, 36, 1800));
-    assert.deepEqual(layout.widths, [90, 180]);
-    assert.deepEqual(layout.starts, [0, 94]);
-    assert.equal(layout.totalWidth, 274);
+    assert.deepEqual(layout.widths, [80, 160]);
+    assert.deepEqual(layout.starts, [0, 84]);
+    assert.equal(layout.totalWidth, 244);
     const resized = model.tabGeometry([{ visualWidth: 1200 }, { visualWidth: 1200 }], 4, 36, 1800);
-    assert.deepEqual(plain(resized.widths), [180, 180]);
+    assert.deepEqual(plain(resized.widths), [160, 160]);
 });
 
 test('shrinking a tab only clamps that tab and does not enlarge any other tab', () => {
     const before = model.tabGeometry([{ visualWidth: 1000 }, { visualWidth: 2000 }], 4, 64, 2000);
     const after = model.tabGeometry([{ visualWidth: 100 }, { visualWidth: 2000 }], 4, 64, 2000);
-    assert.equal(before.widths[0], 135);
+    assert.equal(before.widths[0], 120);
     assert.equal(after.widths[0], 64);
     assert.equal(after.widths[1], before.widths[1]);
-    assert.equal(after.widths[1], 270);
+    assert.equal(after.widths[1], 240);
     assert.ok(after.totalWidth < before.totalWidth);
 });
 
@@ -99,11 +99,11 @@ test('adding or removing a small window leaves existing tab widths unchanged', (
 
 test('missing geometry uses a stable monitor-wide fallback independent of other sizes', () => {
     const mixed = model.tabGeometry([{ visualWidth: 1000 }, { visualWidth: null }, { visualWidth: 2000 }], 4, 64, 2000);
-    assert.deepEqual(plain(mixed.widths), [135, 270, 270]);
+    assert.deepEqual(plain(mixed.widths), [120, 240, 240]);
     const changed = model.tabGeometry([{ visualWidth: 20 }, { visualWidth: null }], 4, 64, 2000);
     assert.equal(changed.widths[1], mixed.widths[1]);
     const unknown = model.tabGeometry([{ visualWidth: NaN }, { visualWidth: -20 }, {}], 4, 64, 2000);
-    assert.deepEqual(plain(unknown.widths), [270, 270, 270]);
+    assert.deepEqual(plain(unknown.widths), [240, 240, 240]);
     assert.deepEqual(plain(model.tabGeometry([], 4, 64, 2000)), { widths: [], starts: [], totalWidth: 0 });
 });
 
@@ -116,11 +116,11 @@ test('reveals either edge of an active tab and clamps offsets to the content bou
     const layout = model.tabGeometry([{ visualWidth: 1800 }, { visualWidth: 1800 },
         { visualWidth: 1800 }], 4, 64, 1800);
     assert.equal(model.scrollPosition(layout, 0, 200, 200, true), 0);
-    assert.equal(model.scrollPosition(layout, 2, 0, 200, true), 548);
-    assert.equal(model.scrollPosition(layout, 1, 150, 200, true), 274);
-    assert.equal(model.scrollPosition(layout, 1, 274, 200, true), 274);
+    assert.equal(model.scrollPosition(layout, 2, 0, 200, true), 488);
+    assert.equal(model.scrollPosition(layout, 1, 150, 200, true), 244);
+    assert.equal(model.scrollPosition(layout, 1, 244, 200, true), 244);
     assert.equal(model.scrollPosition(layout, -1, -20, 200, true), 0);
-    assert.equal(model.scrollPosition(layout, -1, 1000, 200, true), 618);
+    assert.equal(model.scrollPosition(layout, -1, 1000, 200, true), 528);
 });
 
 test('manual overflow browsing survives updates until active-window following resumes', () => {
@@ -131,7 +131,7 @@ test('manual overflow browsing survives updates until active-window following re
     assert.equal(model.scrollPosition(resized, 0, 300, 200, false), 300);
     assert.equal(model.scrollPosition(resized, 0, 300, 200, true), 0);
     const removed = model.tabGeometry(windows.slice(0, 2), 4, 64, 1800);
-    assert.equal(model.scrollPosition(removed, 0, 500, 200, false), 344);
+    assert.equal(model.scrollPosition(removed, 0, 500, 200, false), 284);
 });
 
 test('scrolling handles oversized tabs, short content, and empty workspaces', () => {
@@ -303,4 +303,17 @@ test('incremental tab edits preserve surviving identities through opening, closi
             assert.equal(delegates.find(tab => tab.id === survivor.id), survivor);
         assert.deepEqual(plain(model.tabModelChanges(nextIds, nextIds)), [], 'snapshot-only changes do not recreate tabs');
     }
+});
+
+
+test('configurable tab width scales independently and preserves the readability minimum', () => {
+    const windows = [{visualWidth: 960}, {visualWidth: 1920}, {visualWidth: 20}];
+    assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920).widths), [120, 240, 96]);
+    assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920, 300).widths), [150, 300, 96]);
+    assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920, 120).widths), [96, 120, 96]);
+    assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920, 480).widths), [240, 480, 96]);
+    assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920, 900).widths), [240, 480, 96]);
+    assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920, 50).widths), [96, 120, 96]);
+    for (const invalid of [NaN, Infinity, 0, -1, null])
+        assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920, invalid).widths), [120, 240, 96]);
 });

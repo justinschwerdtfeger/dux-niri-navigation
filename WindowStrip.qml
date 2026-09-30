@@ -14,6 +14,7 @@ Item {
     property real maximumWidth: 640
     property real buttonHeight: 30
     property real referenceWidth: 1920
+    property real preferredTabWidth: 240
     property var parentScreen: null
     property string barEdge: "top"
     property real barSpacing: 0
@@ -21,7 +22,7 @@ Item {
     property var tooltipAnchor: null
     readonly property real gap: Theme.spacingXS
     readonly property var tabLayout: WindowModel.tabGeometry(windows, gap,
-        Math.max(96, (buttonHeight + 24) * 1.5), referenceWidth)
+        Math.max(96, (buttonHeight + 24) * 1.5), referenceWidth, preferredTabWidth)
     property bool animationReady: false
     property real tabOpacity: 1
     property real tabOffset: 0

@@ -67,6 +67,7 @@ PluginComponent {
             // Match the full-height horizontal BasePill.
             buttonHeight: navigation.barThickness
             referenceWidth: navigation.parentScreen?.width ?? 1920
+            preferredTabWidth: Number(navigation.pluginData.tabWidth) || 240
             parentScreen: navigation.parentScreen
             barEdge: navigation.axis?.edge ?? "top"
             barSpacing: navigation.barSpacing

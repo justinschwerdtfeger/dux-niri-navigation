@@ -46,13 +46,15 @@ function visualWidth(window) {
         : Number.isFinite(client) && client > 0 ? client : null;
 }
 
-function tabGeometry(windows, gap, minimumWidth, referenceWidth) {
+function tabGeometry(windows, gap, minimumWidth, referenceWidth, preferredWidth = 240) {
     if (!windows.length)
         return { widths: [], starts: [], totalWidth: 0 };
     const reference = Number.isFinite(referenceWidth) && referenceWidth > 0 ? referenceWidth : 1920;
-    // A monitor-wide window maps to 270px. Neither the list's average nor its
+    // A monitor-wide window maps to the configured width. Neither the list's average nor its
     // smallest window changes the scale, so unrelated tabs remain stable.
-    const scale = 270 / reference;
+    const preferred = Number.isFinite(preferredWidth) && preferredWidth > 0
+        ? Math.max(120, Math.min(480, preferredWidth)) : 240;
+    const scale = preferred / reference;
     const widths = windows.map(w => Math.max(minimumWidth,
         (Number.isFinite(w.visualWidth) && w.visualWidth > 0 ? w.visualWidth : reference) * scale));
     const starts = [];

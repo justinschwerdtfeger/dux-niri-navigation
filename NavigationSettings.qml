@@ -19,6 +19,16 @@ PluginSettings {
     }
 
     SliderSetting {
+        settingKey: "tabWidth"
+        label: "Window tab width"
+        description: "Width for a monitor-wide window. Smaller windows scale proportionally, with a readability minimum."
+        minimum: 120
+        maximum: 480
+        defaultValue: 240
+        unit: "px"
+    }
+
+    SliderSetting {
         settingKey: "maximumWidth"
         label: "Window strip width"
         description: "Maximum width when full-width growth is off, bounded by the monitor width."
