@@ -1,0 +1,16 @@
+# Workspace-owned agent, credential, and editor configuration
+.agents/
+.aws/
+.codex/
+.idea/
+.vscode/
+.qmlls.ini
+*.qmlc
+*.jsc
+__pycache__/
+*.pyc
+.DS_Store
+
+# Local upstream checkouts and scratch artifacts
+.local/
+tmp/
