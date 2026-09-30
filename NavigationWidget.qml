@@ -73,6 +73,7 @@ PluginComponent {
             reverseScroll: navigation.pluginData.reverseScroll !== false
             onColumnScrollRequested: direction => niri.scrollColumn(direction)
             onWindowActivated: windowId => niri.focusWindow(windowId)
+            onWindowCloseRequested: windowId => niri.closeWindow(windowId)
             // DMS chooses the launcher's output; this API does not accept a screen.
             onLauncherRequested: PopoutService.openDankLauncherV2()
         }

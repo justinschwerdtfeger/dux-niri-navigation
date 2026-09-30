@@ -46,6 +46,60 @@ Item {
     // Manual browsing lasts until focus changes, even as DMS replaces snapshots.
     property bool followActive: true
 
+    ListModel { id: tabs }
+
+    Transition {
+        id: tabMove
+        NumberAnimation {
+            properties: "x,y"
+            duration: Theme.shortDuration
+            easing.type: Theme.standardEasing
+        }
+        // A reorder can interrupt an entrance; finish its opacity as well.
+        NumberAnimation {
+            property: "opacity"
+            to: 1
+            duration: Theme.shortDuration
+            easing.type: Theme.standardEasing
+        }
+    }
+
+    Transition {
+        id: tabAdd
+        NumberAnimation {
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: Theme.shortDuration
+            easing.type: Theme.standardEasing
+        }
+    }
+
+    function syncTabs() {
+        const previousIds = [];
+        for (let i = 0; i < tabs.count; i++)
+            previousIds.push(tabs.get(i).windowId);
+        const data = windows.map((window, index) => ({
+            windowId: window.id, appId: window.appId, title: window.title,
+            active: !!window.active, urgent: !!window.urgent,
+            tabWidth: tabLayout.widths[index]
+        }));
+        const changes = WindowModel.tabModelChanges(previousIds, windows.map(window => window.id));
+        if (changes.length)
+            hideTooltip(null);
+        for (const change of changes) {
+            if (change.type === "remove")
+                tabs.remove(change.index);
+            else if (change.type === "insert")
+                tabs.insert(change.index, data[change.index]);
+            else
+                tabs.move(change.from, change.index, 1);
+        }
+        data.forEach((window, index) => tabs.set(index, window));
+    }
+
+    onWindowsChanged: Qt.callLater(syncTabs)
+
     function animateWorkspace() {
         workspaceEnter.stop();
         tabOpacity = 1;
@@ -84,6 +138,7 @@ Item {
     }
 
     signal windowActivated(var windowId)
+    signal windowCloseRequested(var windowId)
     signal launcherRequested()
     signal columnScrollRequested(int direction)
     property var wheelState: ({ axis: "", source: "", value: 0 })
@@ -179,10 +234,14 @@ Item {
         viewport.cancelFlick();
         Qt.callLater(revealActive);
     }
-    onTabLayoutChanged: Qt.callLater(revealActive)
+    onTabLayoutChanged: {
+        Qt.callLater(syncTabs);
+        Qt.callLater(revealActive);
+    }
     Component.onCompleted: {
+        syncTabs();
         animationReady = true;
-        console.info("Justin Navigation: workspace transitions loaded; wheel input has no cooldown, 120 angle units per step");
+        console.info("Justin Navigation: workspace transitions and tab movement loaded; wheel input has no cooldown, 120 angle units per step");
         Qt.callLater(revealActive);
     }
 
@@ -214,24 +273,38 @@ Item {
             spacing: strip.gap
             transform: Translate { y: strip.tabOffset }
 
-            Repeater {
-                model: strip.windows
+            move: strip.animationReady && !Theme.snapListModelChanges ? tabMove : null
+            add: strip.animationReady && !Theme.snapListModelChanges ? tabAdd : null
 
-                NavigationButton {
-                    required property var modelData
-                    required property int index
-                    width: strip.tabLayout.widths[index]
+            Repeater {
+                model: tabs
+
+                Item {
+                    id: tab
+                    required property var windowId
+                    required property string appId
+                    required property string title
+                    required property bool active
+                    required property bool urgent
+                    required property real tabWidth
+                    width: tabWidth
                     height: strip.buttonHeight
-                    appId: modelData.appId
-                    showAppIcon: true
-                    text: modelData.title
-                    selected: modelData.active
-                    urgent: modelData.urgent
-                    tooltip: applicationName
-                        ? applicationName + " • " + modelData.title : modelData.title
-                    onTooltipRequested: anchor => strip.showTooltip(anchor)
-                    onTooltipDismissed: anchor => strip.hideTooltip(anchor)
-                    onClicked: strip.windowActivated(modelData.id)
+
+                    NavigationButton {
+                        anchors.fill: parent
+                        appId: tab.appId
+                        showAppIcon: true
+                        acceptMiddleClick: true
+                        text: tab.title
+                        selected: tab.active
+                        urgent: tab.urgent
+                        tooltip: applicationName
+                            ? applicationName + " • " + tab.title : tab.title
+                        onTooltipRequested: anchor => strip.showTooltip(anchor)
+                        onTooltipDismissed: anchor => strip.hideTooltip(anchor)
+                        onClicked: strip.windowActivated(tab.windowId)
+                        onMiddleClicked: strip.windowCloseRequested(tab.windowId)
+                    }
                 }
             }
         }

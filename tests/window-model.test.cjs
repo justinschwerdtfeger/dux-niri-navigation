@@ -284,3 +284,23 @@ test('three rapid wheel notches count three times even when pixel metadata chang
     assert.equal(state.steps, 1);
     assert.equal(state.value, 0);
 });
+
+test('incremental tab edits preserve surviving identities through opening, closing, and reordering', () => {
+    const sequences = [[1, 2, 3], [1, 3], [1, 4, 3], [3, 1, 4], [4, 5], [], [6]];
+    let delegates = [];
+    for (const nextIds of sequences) {
+        const previous = delegates.slice();
+        const previousIds = previous.map(tab => tab.id);
+        const edits = plain(model.tabModelChanges(previousIds, nextIds));
+        for (const edit of edits) {
+            if (edit.type === 'remove') delegates.splice(edit.index, 1);
+            else if (edit.type === 'insert') delegates.splice(edit.index, 0, {id: nextIds[edit.index]});
+            else delegates.splice(edit.index, 0, delegates.splice(edit.from, 1)[0]);
+        }
+        assert.deepEqual(delegates.map(tab => tab.id), nextIds);
+        assert.deepEqual(previousIds, previous.map(tab => tab.id), 'input remains unchanged');
+        for (const survivor of previous.filter(tab => nextIds.includes(tab.id)))
+            assert.equal(delegates.find(tab => tab.id === survivor.id), survivor);
+        assert.deepEqual(plain(model.tabModelChanges(nextIds, nextIds)), [], 'snapshot-only changes do not recreate tabs');
+    }
+});

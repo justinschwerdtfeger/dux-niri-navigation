@@ -8,7 +8,7 @@ The target is a top strip of window icons and titles and a left rail of workspac
 
 ## Window strip
 
-Show tiled windows on the workspace active on the hosting bar's output, not necessarily the globally focused output. Order tiled windows by Niri's column and tile indices. Exclude floating windows; use stable ID ordering for tiled windows missing layout metadata. Clicking an icon focuses that window by ID. Tabs show the window’s exact title beside its icon, without an added application label. Blank titles use “Untitled window”, not the app ID.
+Show tiled windows on the workspace active on the hosting bar's output, not necessarily the globally focused output. Order tiled windows by Niri's column and tile indices. Exclude floating windows; use stable ID ordering for tiled windows missing layout metadata. Left-clicking a tab focuses that window by ID. Middle-clicking a tab requests that Niri close that exact window by ID, without focusing it first; applications may show an unsaved-work prompt. The adapter rechecks current output/workspace membership before dispatch. Middle-click is enabled only for window tabs, leaving launcher and arrow controls unchanged. Tabs show the window’s exact title beside its icon, without an added application label. Blank titles use “Untitled window”, not the app ID.
 
 Many windows must have bounded overflow; hover shows application names and window titles through DMS’s native tooltip, with its standard single-line width limit. Test DMS's host sizing before choosing scrolling, a maximum-width strip, or an overflow menu. Do not let a growing list push other bar controls off screen.
 
@@ -21,6 +21,8 @@ The inspected launcher APIs choose the globally focused output and take no scree
 Buttons use the hosting bar’s full `barThickness`, centered by DMS’s unclipped content loader. A scoped binding sets the horizontal host pill’s `widgetThickness` to `barThickness`, so its background and outline also fill the height. The host pill is identified by its content component rather than child order; vertical instances retain DMS sizing. The DMS Size control sets bar height, whereas widget padding is horizontal for this plugin.
 
 Workspace changes on the hosting output trigger a short fade and upward settle of the incoming horizontal tabs, keyed by the active workspace's session-local Niri ID. The live window model and focus update immediately; rapid switches restart the entrance rather than queueing transitions. Title, focus, and layout snapshots within one workspace do not restart the entrance. The natural content width eases separately, retaining independent tab widths and applying the hosting width ceiling immediately. Empty workspaces settle to the launcher-only strip. Animation duration and easing use DMS's theme, including its disabled-animation setting. The launcher and overflow controls do not fade or slide.
+
+Window tabs use an incremental model keyed by live Niri window ID. Updating titles, focus, or geometry keeps existing delegates; opening, closing, and reordering edit the model in place. Row position transitions slide surviving tabs into the new layout, with a brief fade for added tabs. Closed tabs leave immediately when reactive state removes them, while neighbors slide into the gap. These transitions follow the same DMS timing and disabled-animation setting as workspace transitions. Tab widths retain the independent monitor-based scale.
 
 ## Workspace rail
 

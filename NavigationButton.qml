@@ -21,6 +21,7 @@ Rectangle {
     property bool selected: false
     property bool urgent: false
     property string tooltip: text
+    property bool acceptMiddleClick: false
 
     readonly property bool hovered: pointer.containsMouse
     readonly property bool down: pointer.pressed
@@ -40,6 +41,7 @@ Rectangle {
     border.color: Theme.primary
 
     signal clicked()
+    signal middleClicked()
     signal tooltipRequested(var anchor)
     signal tooltipDismissed(var anchor)
 
@@ -105,11 +107,17 @@ Rectangle {
         id: pointer
         anchors.fill: parent
         hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | (button.acceptMiddleClick ? Qt.MiddleButton : Qt.NoButton)
         cursorShape: Qt.PointingHandCursor
         onEntered: hoverDelay.restart()
         onExited: button.dismissTooltip()
         onPressed: button.dismissTooltip()
-        onClicked: button.clicked()
+        onClicked: mouse => {
+            if (mouse.button === Qt.MiddleButton)
+                button.middleClicked();
+            else if (mouse.button === Qt.LeftButton)
+                button.clicked();
+        }
     }
 
     Timer {

@@ -1,6 +1,29 @@
 .pragma library
 
 // Pure transformations shared by QML and the Node model tests.
+// Incremental edits preserve delegates for live IDs across reactive snapshots.
+function tabModelChanges(previousIds, nextIds) {
+    const ids = previousIds.slice();
+    const edits = [];
+    for (let index = ids.length - 1; index >= 0; index--) {
+        if (!nextIds.includes(ids[index])) {
+            edits.push({ type: "remove", index: index });
+            ids.splice(index, 1);
+        }
+    }
+    nextIds.forEach((id, index) => {
+        const from = ids.indexOf(id);
+        if (from < 0) {
+            edits.push({ type: "insert", index: index });
+            ids.splice(index, 0, id);
+        } else if (from !== index) {
+            edits.push({ type: "move", from: from, index: index });
+            ids.splice(index, 0, ids.splice(from, 1)[0]);
+        }
+    });
+    return edits;
+}
+
 function activeWorkspace(workspaces, outputName) {
     if (!outputName)
         return null;

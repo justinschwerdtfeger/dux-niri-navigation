@@ -29,4 +29,11 @@ QtObject {
         if (available && currentWindows.some(window => window.id === windowId))
             NiriService.focusWindow(windowId);
     }
+
+    function closeWindow(windowId) {
+        // Close the clicked window directly, including when it is not focused.
+        if (available && windowId !== null && windowId !== undefined
+                && currentWindows.some(window => window.id === windowId))
+            NiriService.send({ "Action": { "CloseWindow": { "id": windowId } } });
+    }
 }
