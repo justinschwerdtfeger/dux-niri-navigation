@@ -1,13 +1,18 @@
 {
   "id": "justinNavigation",
   "name": "Justin Navigation",
-  "description": "A starting point for Material Shell-inspired window and workspace navigation on Niri.",
-  "version": "0.1.0",
+  "description": "A workspace-scoped, proportional window icon and title strip for Niri, inspired by Material Shell.",
+  "version": "0.4.1",
   "author": "Justin",
   "type": "widget",
-  "capabilities": ["dankbar-widget"],
+  "capabilities": [
+    "dankbar-widget"
+  ],
   "component": "./NavigationWidget.qml",
   "settings": "./NavigationSettings.qml",
   "icon": "view_sidebar",
-  "permissions": ["settings_read", "settings_write"]
+  "permissions": [
+    "settings_read",
+    "settings_write"
+  ]
 }
