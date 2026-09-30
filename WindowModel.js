@@ -27,9 +27,9 @@ function tabGeometry(windows, gap, minimumWidth, referenceWidth) {
     if (!windows.length)
         return { widths: [], starts: [], totalWidth: 0 };
     const reference = Number.isFinite(referenceWidth) && referenceWidth > 0 ? referenceWidth : 1920;
-    // A monitor-wide window maps to 180px. Neither the list's average nor its
+    // A monitor-wide window maps to 270px. Neither the list's average nor its
     // smallest window changes the scale, so unrelated tabs remain stable.
-    const scale = 180 / reference;
+    const scale = 270 / reference;
     const widths = windows.map(w => Math.max(minimumWidth,
         (Number.isFinite(w.visualWidth) && w.visualWidth > 0 ? w.visualWidth : reference) * scale));
     const starts = [];
@@ -39,6 +39,47 @@ function tabGeometry(windows, gap, minimumWidth, referenceWidth) {
         end += width + (index < widths.length - 1 ? gap : 0);
     });
     return { widths: widths, starts: starts, totalWidth: end };
+}
+
+// Reserve arrows only after tabs and the launcher exceed the width ceiling.
+function stripGeometry(contentWidth, maximumWidth, controlWidth, gap) {
+    if (contentWidth <= 0)
+        return { width: controlWidth, viewportWidth: 0, showArrows: false };
+    const naturalWidth = contentWidth + controlWidth + gap;
+    const width = Math.min(maximumWidth, naturalWidth);
+    // On an unusually narrow host, keep the launcher and allow dragging
+    // rather than placing arrows outside the widget.
+    const showArrows = naturalWidth > maximumWidth
+        && width > 3 * (controlWidth + gap);
+    const controls = showArrows ? 3 : 1;
+    return { width: width, showArrows: showArrows,
+        viewportWidth: Math.max(0, width - controls * (controlWidth + gap)) };
+}
+
+// Bar content width already excludes host frame/inset margins. Only occupied
+// sections constrain growth; an empty center's full-size container does not.
+function barWidthBudget(barWidth, section, leftWidth, centerStart, centerWidth,
+        rightWidth, siblingWidths, gap, padding) {
+    let sectionWidth = barWidth;
+    if (section === "left") {
+        if (rightWidth > 0)
+            sectionWidth = Math.min(sectionWidth, barWidth - rightWidth - gap);
+        if (centerWidth > 0)
+            sectionWidth = Math.min(sectionWidth, centerStart - gap);
+    } else if (section === "right") {
+        if (leftWidth > 0)
+            sectionWidth = Math.min(sectionWidth, barWidth - leftWidth - gap);
+        if (centerWidth > 0)
+            sectionWidth = Math.min(sectionWidth, barWidth - centerStart - centerWidth - gap);
+    } else {
+        // A centered section must fit on both sides of the bar midpoint.
+        sectionWidth = 2 * Math.max(0, Math.min(
+            barWidth / 2 - (leftWidth > 0 ? leftWidth + gap : 0),
+            barWidth / 2 - (rightWidth > 0 ? rightWidth + gap : 0)));
+    }
+    const siblings = siblingWidths.reduce((sum, width) => sum + width, 0);
+    return Math.max(0, Math.floor(sectionWidth - siblings
+        - siblingWidths.length * gap - padding * 2));
 }
 
 function scrollPosition(layout, activeIndex, offset, viewportWidth, revealActive) {
@@ -58,7 +99,7 @@ function scrollPosition(layout, activeIndex, offset, viewportWidth, revealActive
 function workspaceWindows(windows, workspace) {
     if (!workspace)
         return [];
-    return windows.filter(window => window.workspace_id === workspace.id)
+    return windows.filter(window => window.workspace_id === workspace.id && !window.is_floating)
         .slice().sort((a, b) => {
             const pa = layoutPosition(a);
             const pb = layoutPosition(b);

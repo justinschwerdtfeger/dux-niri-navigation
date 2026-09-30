@@ -40,7 +40,7 @@ After manually loading the plugin in an existing DMS/Niri session:
 
 Later navigation milestones also need multi-monitor filtering, window reorder/title changes, floating windows, long-title overflow, and icon cleanup checks.
 
-`make check` covers packaging validation, Python and link-script syntax, whitespace checks, fourteen pure window-model tests, and eight tooling tests. Window-model tests cover output selection, workspace filtering, layout order, malformed/missing positions, floating windows, title fallbacks, active state, urgency, changing snapshots, proportional geometry, and scroll offsets. Tooling tests cover successful repeated refresh, read-only embedded sources, persistent imports, preserved editor settings, overlapping paths, missing sources, scanner failure/timeout, and publication rollback.
+`make check` covers packaging validation, Python and link-script syntax, whitespace checks, twenty pure window-model tests, and eight tooling tests. Window-model tests cover output selection, workspace filtering, layout order, malformed/missing positions, floating-window exclusion/toggles, strip growth and arrow thresholds, title fallbacks, active state, urgency, changing snapshots, proportional geometry, and scroll offsets. Tooling tests cover successful repeated refresh, read-only embedded sources, persistent imports, preserved editor settings, overlapping paths, missing sources, scanner failure/timeout, and publication rollback.
 
 Earlier windowless compilation checks established QML component readiness only. Current verification includes live DMS loading and screenshots of populated/empty monitor bars. Click-to-focus, launcher clicks, tooltip behavior, and overflow interaction still need the acceptance checks above; rendering evidence does not establish those interactions.
 
@@ -92,3 +92,38 @@ The earlier shared scale was based on the average and minimum widths in the wind
 All three existing commits were reviewed against the final tree and the active DMS 1.6.2 UI source. See [Review](REVIEW.md) for findings and fixes. The plugin now calls the inspected `openDankLauncherV2` directly; older launcher APIs are outside the verified baseline. Tooltips explicitly render plain text, and custom buttons expose an accessibility press action with an enabled-state guard.
 
 The revised tooling setup successfully regenerated imports from the active embedded source without loading desktop services. A separate nonvisual Quickshell helper checked component readiness for all five QML components without instantiating the plugin, panels, or desktop services. It used the existing Wayland backend because the DMS host depends on `PanelWindow`, which cannot load with the offscreen backend. These are tooling and component-loading checks. The changed scrolling, tooltip, accessibility, and launcher behavior still needs the runtime acceptance checks in the existing shell; no shell restart or desktop configuration change was performed for this review.
+
+
+## Strip layout update — 2026-09-30
+
+The model excludes floating windows reactively. Tab scale increased from 180 to 270 pixels per monitor-wide window, with a 96-pixel minimum (or 1.5 × (button height + 24), whichever is larger). Existing tabs retain their independent monitor-based scale. Arrows reserve no space until tabs plus the launcher overflow the configured ceiling. Empty workspaces, including floating-only workspaces, show just the launcher button.
+
+Inspected the active DMS 1.6.2 `PluginComponent.qml`, `BasePill.qml`, `Theme.qml`, and `DankBarTab.qml`, plus the saved bar configuration. `BasePill` centers its content without clipping, so the horizontal strip now uses `barThickness` for button height. The follow-up full-height change also binds the horizontal host pill’s `widgetThickness` to `barThickness`, filling its background and outline. Settings → DankBar → Size changes bar height; Padding/Remove Widget Padding change horizontal padding for this plugin. No desktop configuration was changed.
+
+`make check` covers the changed filtering, width scale, scroll offsets, arrow threshold, and plus-only geometry. Live visuals, full-height hit targets, and empty/populated transitions require validation in the existing DMS session. Helper caching can require an authorized shell restart; no restart was performed for this change.
+
+
+## Full-height horizontal pill
+
+DMS 1.6.2 `WidgetHost.qml` binds the plugin's `widgetThickness`, so the plugin leaves that injected property alone. Instead it identifies the `PluginComponent` child `BasePill` whose `content` is its horizontal component, then applies a scoped `Binding` to that pill's `widgetThickness`. Its value follows `barThickness`, and the original binding is restored for vertical instances. This is an inspected internal host dependency, not a public DMS full-height API; recheck after DMS upgrades.
+
+The width ceiling reserves the padding scaled to the full-height pill, matching `BasePill.horizontalPadding`. DMS opacity, hover, outline, rounding, and blur behavior remain in the host component. Static checks pass. A temporary, offscreen QML helper verified host-pill lookup, full-height binding, resize updates, and restoration of the original binding when switching to vertical orientation. It instantiated no DMS services or panels; sandbox restrictions blocked its IPC socket, so it was terminated after the assertions passed. Live full-height appearance remains unverified without reloading the existing session. No desktop settings or shell service were changed.
+
+
+## Right-side navigation controls
+
+Both arrows now sit to the right of the window viewport, before the launcher. The control row anchors to the strip's actual right edge; the viewport fills the remaining width instead of relying on the requested implicit width. Arrow visibility uses the actual width. If arrows cannot fit, they are hidden and dragging remains available. The strip clips its content to its bounds.
+
+The inspected DMS 1.6.2 `WidgetHost` injects `sectionAvailablePrimarySize` when a plugin declares it. A trial cap using that section budget stopped full-width growth short of the right edge in the user’s session, so the plugin no longer declares or uses it. The monitor ceiling and optional explicit pixel limit control growth; right-anchored controls remain. Shared sections may still need the explicit plugin width limit. Model tests cover reduced host widths and the narrow fallback. An isolated offscreen QML helper used the actual strip layout with stub theme/button visuals and verified arrow order, launcher right-edge placement, reduced host widths, and the plus-only empty state. Sandbox restrictions blocked its IPC socket; it was terminated after the assertions passed. Actual DMS session appearance remains to be verified.
+
+
+The section-budget cap was removed after live user feedback showed premature clipping of full-width growth. `make check` passes after the correction. No shell restart or desktop configuration change was performed; the restored extent still needs confirmation after plugin reload.
+
+
+## Available bar width correction
+
+Live feedback exposed both incomplete width ceilings: the monitor cap ignored the launcher/music siblings, while DMS's section budget stopped growth prematurely. The current implementation uses `BarGeometry.qml`, inspected against the active DMS 1.6.2 `DankBarContent`, `LeftSection`, `RightSection`, `CenterSection`, `WidgetHost`, and `BasePill` sources. Read-only desktop configuration inspection confirmed launcher/navigation/music in the top bar's left section, empty center/right sections, and zero bar insets.
+
+The adapter finds the containing section and layout through named section ancestors and the layout's `widgetSpacing`. It reads the stack content width (already excluding host margins), other visible delegates' widths, occupied adjacent sections, and the actual snapped `BasePill.horizontalPadding`. It excludes the plugin's own section width to avoid a sizing feedback loop. `CenterSection.width` spans the bar even when empty, so occupancy uses `contentStart`/`contentSize`. A centered plugin uses a symmetric midpoint budget; unusual index-centering configurations and multiple growing plugin instances require additional live checks. Insufficient space for even the launcher remains a host layout limitation.
+
+Twenty model tests include sibling reservation, empty center handling, exact zero-inset growth, and occupied neighboring sections. An offscreen QML helper instantiated the actual adapter with a representative host layout and verified reactive music appearance/removal, monitor resizing, and center/right occupancy without binding loops. It instantiated no DMS services; its sandbox-blocked IPC socket was unrelated to the successful assertions and the helper was terminated afterward. `make check` passes. Live rendering still requires confirmation after reload; no shell restart or desktop configuration edits were performed.
