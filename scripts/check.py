@@ -3,8 +3,9 @@
 import json
 from pathlib import Path
 
-
 root = Path(__file__).resolve().parent.parent
+tooling_script = root / "scripts/setup-qml-tooling.py"
+compile(tooling_script.read_text(), str(tooling_script), "exec")
 manifest = json.loads((root / "plugin.json").read_text())
 required = ("id", "name", "description", "version", "author", "type", "component", "settings")
 for key in required:

@@ -55,7 +55,25 @@ Earlier windowless compilation checks established QML component readiness only. 
 - [Niri actions](https://niri-wm.github.io/niri/niri_ipc/enum.Action.html)
 - [Material Shell inspiration](https://github.com/material-shell/material-shell)
 
-For QML language-server support, follow DMS's upstream development guide using a separate local DMS checkout with its submodules. Avoid checking machine-specific import paths into this plugin repository.
+## VS Code QML imports
+
+Install the official `TheQtCompany.qt-qml` extension and its standalone `qmlls`. The downloaded server previously failed to start because `libodbc.so.2` was absent; the user installed its dependency and confirmed startup works.
+
+Generate this repository's DMS imports from the active UI source:
+
+```bash
+python3 scripts/setup-qml-tooling.py --dms-source /run/user/1000/danklinux-shell/fc3c244a314d77c8
+```
+
+Discover the active source path again from `dms doctor` or service logs after upgrades. For a development checkout, pass its `quickshell/` directory with the DankCommon submodule present. The setup requires Python 3 and `qs`; it does not download sources or install packages.
+
+The helper snapshots DMS under `.local/dms-tooling/source`, replaces the snapshot's entrypoint with an empty, offscreen helper, and lets Quickshell's own scanner generate `qmldir` files and singleton metadata. It imports types without instantiating DMS services or running a second desktop shell. Generated imports are copied to `.local/dms-tooling/imports` rather than depending on `/run/user/` after reboot. `.qmlls.ini` points at that directory and the installed Qt/Quickshell import paths. New `.vscode/settings.json` enables the server and disables CMake calls; existing editor settings are preserved.
+
+All generated paths are already gitignored. Refresh this snapshot after a DMS upgrade or moving the repository; it represents the selected source revision rather than automatically following changes. The setup rewrites the local `.qmlls.ini` and its own generated directories. It does not modify DMS, global editor settings, or desktop configuration.
+
+In VS Code, open this repository and run **Qt: Restart QML Language Server**. If it keeps old configuration, use **Developer: Reload Window**. QML files should have language mode **QML**. Diagnostics appear as squiggles and in the Problems panel; text inside a dynamic `var` model can still be beyond static type checking.
+
+Verified with the installed standalone qmlls (build 2026-09-07) against DMS 1.6.2 imports: a protocol-level test resolved `PluginComponent`, `DankIcon`, and `Theme`, and reported an intentionally invalid property. `NavigationWidget.qml` produced lint warnings rather than unresolved DMS imports. Warnings about unqualified outer-component IDs and the legacy `openSpotlight` compatibility branch are currently present; diagnostics were not disabled to hide them. This tooling check does not verify visual runtime behavior.
 
 ## Width-limit update
 

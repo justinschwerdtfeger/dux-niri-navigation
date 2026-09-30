@@ -40,6 +40,10 @@ Verified in DMS 1.6.2 with Quickshell 0.3.1. The running shell uses DMS’s embe
 
 To remove the development link, first verify it points here, then remove only that link and disable the plugin in DMS. Repository checks do not alter your desktop configuration.
 
+## Editor support
+
+VS Code DMS imports are set up locally. Install the official **Qt QML** extension and run **Qt: Restart QML Language Server** after opening this repository. See [development notes](docs/DEVELOPMENT.md#vs-code-qml-imports) for refreshing the imports after DMS upgrades. Generated metadata and editor paths are gitignored.
+
 ## Checks
 
 ```bash
