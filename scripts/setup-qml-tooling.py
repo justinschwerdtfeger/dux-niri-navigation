@@ -107,8 +107,13 @@ def setup(root, source):
                 raise ValueError(f"Quickshell did not generate metadata for qs.{module.replace('/', '.')}")
 
         # Dereference scanner symlinks before the temporary runtime disappears.
+        # The scanner only exposes QML types, not imported JavaScript or assets.
+        # Preserve the source tree too so relative imports remain resolvable.
         imports = local / "imports"
-        shutil.copytree(generated / "qs", stage / "imports/qs", symlinks=False)
+        shutil.copytree(snapshot, stage / "imports/qs", copy_function=shutil.copyfile,
+                        ignore=shutil.ignore_patterns(".qmlls.ini"))
+        shutil.copytree(generated / "qs", stage / "imports/qs", symlinks=False,
+                        dirs_exist_ok=True)
         # The snapshot's scanner paths are temporary; only the root config is used.
         (snapshot / ".qmlls.ini").unlink()
         ini = stage / "qmlls.ini"

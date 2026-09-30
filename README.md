@@ -42,7 +42,7 @@ To remove the development link, first verify it points here, then remove only th
 
 ## Editor support
 
-An optional setup script generates local DMS imports for VS Code. Install the official **Qt QML** extension and run **Qt: Restart QML Language Server** after opening this repository. See [development notes](docs/DEVELOPMENT.md#vs-code-qml-imports) for refreshing the imports after DMS upgrades. Generated metadata and editor paths are gitignored.
+An optional setup script generates local DMS imports for VS Code. Install the official **Qt QML** extension and run **Qt: Restart QML Language Server** after opening this repository. See [development notes](docs/DEVELOPMENT.md#vs-code-qml-imports) for refreshing the imports after DMS upgrades. Generated metadata and editor paths are gitignored. The setup preserves DMS JavaScript helpers as well as type metadata so relative imports resolve.
 
 ## Checks
 

@@ -29,6 +29,9 @@ class ToolingTests(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("original DMS source\n")
         self.local = self.root / ".local/dms-tooling"
+        (self.source / "Common/QmlUtils.js").write_text("function helper() {}\n")
+        (self.source / "assets").mkdir()
+        (self.source / "assets/icon.svg").write_text("<svg/>\n")
         self.local.mkdir(parents=True)
         for name in ("source", "imports"):
             (self.local / name).mkdir()
@@ -75,6 +78,10 @@ class ToolingTests(unittest.TestCase):
         theme = self.local / "imports/qs/Common/Theme.qml"
         self.assertFalse(theme.is_symlink())
         self.assertEqual(theme.read_text(), "original DMS source\n")
+        self.assertEqual((self.local / "imports/qs/Common/QmlUtils.js").read_text(),
+                         "function helper() {}\n")
+        self.assertEqual((self.local / "imports/qs/assets/icon.svg").read_text(), "<svg/>\n")
+        self.assertFalse((self.local / "imports/qs/.qmlls.ini").exists())
         config = tooling.configparser.ConfigParser()
         config.read(self.root / ".qmlls.ini")
         self.assertEqual(config["General"]["buildDir"].strip('"'), str(self.local / "imports"))
