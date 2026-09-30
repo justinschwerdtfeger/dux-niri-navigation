@@ -16,6 +16,9 @@ Item {
         Math.max(64, buttonHeight + 24), referenceWidth)
     readonly property real controlWidth: buttonHeight
     readonly property int activeIndex: windows.findIndex(window => window.active)
+    readonly property var activeWindowId: activeIndex >= 0 ? windows[activeIndex].id : null
+    // Manual browsing lasts until focus changes, even as DMS replaces snapshots.
+    property bool followActive: true
 
     signal windowActivated(var windowId)
     signal launcherRequested()
@@ -28,28 +31,26 @@ Item {
     height: implicitHeight
 
     function scrollBy(amount) {
-        viewport.contentX = Math.max(0, Math.min(
-            Math.max(0, viewport.contentWidth - viewport.width), viewport.contentX + amount));
+        followActive = false;
+        viewport.cancelFlick();
+        viewport.contentX = WindowModel.scrollPosition(tabLayout, activeIndex,
+            viewport.contentX + amount, viewport.width, false);
     }
 
     function revealActive() {
-        const maxX = Math.max(0, viewport.contentWidth - viewport.width);
-        if (activeIndex < 0) {
-            viewport.contentX = Math.min(viewport.contentX, maxX);
+        if (viewport.moving)
             return;
-        }
-        const start = tabLayout.starts[activeIndex];
-        const tabWidth = tabLayout.widths[activeIndex];
-        if (start < viewport.contentX)
-            viewport.contentX = start;
-        else if (start + tabWidth > viewport.contentX + viewport.width)
-            viewport.contentX = tabWidth > viewport.width ? start : start + tabWidth - viewport.width;
-        viewport.contentX = Math.max(0, Math.min(maxX, viewport.contentX));
+        viewport.contentX = WindowModel.scrollPosition(tabLayout, activeIndex,
+            viewport.contentX, viewport.width, followActive);
     }
 
-    onWindowsChanged: Qt.callLater(revealActive)
-    onWidthChanged: Qt.callLater(revealActive)
+    onActiveWindowIdChanged: {
+        followActive = true;
+        viewport.cancelFlick();
+        Qt.callLater(revealActive);
+    }
     onTabLayoutChanged: Qt.callLater(revealActive)
+    Component.onCompleted: Qt.callLater(revealActive)
 
     Row {
         anchors.fill: parent
@@ -68,11 +69,17 @@ Item {
             id: viewport
             width: Math.max(1, strip.width - strip.controlWidth * 3 - strip.gap * 3)
             height: strip.buttonHeight
-            contentWidth: titles.width
+            contentWidth: strip.tabLayout.totalWidth
             contentHeight: height
             flickableDirection: Flickable.HorizontalFlick
             boundsBehavior: Flickable.StopAtBounds
             clip: true
+            onWidthChanged: Qt.callLater(strip.revealActive)
+            onDraggingChanged: {
+                if (dragging)
+                    strip.followActive = false;
+            }
+            onMovementEnded: Qt.callLater(strip.revealActive)
 
             Row {
                 id: titles

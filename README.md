@@ -2,7 +2,7 @@
 
 A DMS plugin project for Material Shell-inspired navigation on Niri: window icons and titles across the top and workspace icons down the left.
 
-The horizontal widget shows app icons for windows on the workspace active on its monitor, ordered by Niri's layout. Each tab shows its icon and the window's own title, without an added application name. Width follows the window's visual width at a stable monitor-based scale; small tabs have a readability minimum. Long titles elide, with the full title on hover. Click an icon to focus its window; use the arrows or drag the strip to reach overflow, and click **+** to open DMS's launcher. Floating windows and windows without layout positions follow tiled windows in ID order.
+The horizontal widget shows app icons for windows on the workspace active on its monitor, ordered by Niri's layout. Each tab shows its icon and the window's own title, without an added application name. Width follows the window's visual width at a stable monitor-based scale; small tabs have a readability minimum. Long titles elide, with the full title on hover. Click an icon to focus its window; use the arrows or drag the strip to reach overflow, and click **+** to open DMS's launcher. Manual overflow browsing stays in place across state updates until the active window changes. Floating windows and windows without layout positions follow tiled windows in ID order.
 
 The vertical widget is still a diagnostic workspace count across all outputs, including Niri's trailing empty workspace. Workspace buttons and custom icons are the next milestone.
 
@@ -42,7 +42,7 @@ To remove the development link, first verify it points here, then remove only th
 
 ## Editor support
 
-VS Code DMS imports are set up locally. Install the official **Qt QML** extension and run **Qt: Restart QML Language Server** after opening this repository. See [development notes](docs/DEVELOPMENT.md#vs-code-qml-imports) for refreshing the imports after DMS upgrades. Generated metadata and editor paths are gitignored.
+An optional setup script generates local DMS imports for VS Code. Install the official **Qt QML** extension and run **Qt: Restart QML Language Server** after opening this repository. See [development notes](docs/DEVELOPMENT.md#vs-code-qml-imports) for refreshing the imports after DMS upgrades. Generated metadata and editor paths are gitignored.
 
 ## Checks
 
@@ -50,7 +50,7 @@ VS Code DMS imports are set up locally. Install the official **Qt QML** extensio
 make check
 ```
 
-Requires Python 3 and Node.js. This validates packaging, checks the setup script's syntax, runs eleven window-model tests, and checks patch whitespace. It does not compile QML. The widget was loaded in DMS 1.6.2 and screenshots confirmed title text, arrows, the plus button, and the empty-workspace label. Click, overflow, and launcher interaction checks remain. See [development notes](docs/DEVELOPMENT.md).
+Requires Python 3 and Node.js. This validates packaging, checks the setup script's syntax, runs window-model and tooling recovery tests, checks the link script's syntax, and checks patch whitespace. It does not compile QML. The widget was loaded in DMS 1.6.2 and screenshots confirmed title text, arrows, the plus button, and the empty-workspace label. Click, overflow, and launcher interaction checks remain. See [development notes](docs/DEVELOPMENT.md).
 
 ## Project map
 
@@ -67,3 +67,5 @@ Requires Python 3 and Node.js. This validates packaging, checks the setup script
 | [Development](docs/DEVELOPMENT.md) | Upstream references and validation |
 | [Loading](docs/LOADING.md) | First-time setup, reload, and troubleshooting |
 | [Agent guidance](AGENTS.md) | Context and working rules for future agents |
+
+The full review of the first three commits and its fixes are recorded in [Review](docs/REVIEW.md).

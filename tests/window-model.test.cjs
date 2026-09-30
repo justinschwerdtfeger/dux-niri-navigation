@@ -111,3 +111,34 @@ test('uses the exact window title without appending an application name', () => 
     const result = model.workspaceWindows([window(1, 1, 1, { title: 'Budget — June', app_id: 'org.example.Editor' })], workspace);
     assert.equal(result[0].title, 'Budget — June');
 });
+
+test('reveals either edge of an active tab and clamps offsets to the content bounds', () => {
+    const layout = model.tabGeometry([{ visualWidth: 1800 }, { visualWidth: 1800 },
+        { visualWidth: 1800 }], 4, 64, 1800);
+    assert.equal(model.scrollPosition(layout, 0, 200, 200, true), 0);
+    assert.equal(model.scrollPosition(layout, 2, 0, 200, true), 348);
+    assert.equal(model.scrollPosition(layout, 1, 150, 200, true), 164);
+    assert.equal(model.scrollPosition(layout, 1, 164, 200, true), 164);
+    assert.equal(model.scrollPosition(layout, -1, -20, 200, true), 0);
+    assert.equal(model.scrollPosition(layout, -1, 1000, 200, true), 348);
+});
+
+test('manual overflow browsing survives updates until active-window following resumes', () => {
+    const windows = [{ visualWidth: 1800 }, { visualWidth: 1800 }, { visualWidth: 1800 }];
+    const layout = model.tabGeometry(windows, 4, 64, 1800);
+    assert.equal(model.scrollPosition(layout, 0, 300, 200, false), 300);
+    const resized = model.tabGeometry([...windows, { visualWidth: 300 }], 4, 64, 1800);
+    assert.equal(model.scrollPosition(resized, 0, 300, 200, false), 300);
+    assert.equal(model.scrollPosition(resized, 0, 300, 200, true), 0);
+    const removed = model.tabGeometry(windows.slice(0, 2), 4, 64, 1800);
+    assert.equal(model.scrollPosition(removed, 0, 300, 200, false), 164);
+});
+
+test('scrolling handles oversized tabs, short content, and empty workspaces', () => {
+    const layout = model.tabGeometry([{ visualWidth: 3600 }, { visualWidth: 1800 }], 4, 64, 1800);
+    assert.equal(model.scrollPosition(layout, 0, 100, 200, true), 0);
+    assert.equal(model.scrollPosition(layout, 0, 100, 200, false), 100);
+    assert.equal(model.scrollPosition(layout, 1, 0, 1000, true), 0);
+    assert.equal(model.scrollPosition(layout, 9, 100, 200, true), 100);
+    assert.equal(model.scrollPosition({ widths: [], starts: [], totalWidth: 0 }, -1, 100, 200, true), 0);
+});

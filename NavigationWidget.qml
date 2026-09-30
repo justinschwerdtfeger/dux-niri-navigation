@@ -33,12 +33,7 @@ PluginComponent {
             referenceWidth: navigation.parentScreen?.width ?? 1920
             onWindowActivated: windowId => niri.focusWindow(windowId)
             // DMS chooses the launcher's output; this API does not accept a screen.
-            onLauncherRequested: {
-                if (typeof PopoutService.openDankLauncherV2 === "function")
-                    PopoutService.openDankLauncherV2();
-                else
-                    PopoutService.openSpotlight();
-            }
+            onLauncherRequested: PopoutService.openDankLauncherV2()
         }
     }
 

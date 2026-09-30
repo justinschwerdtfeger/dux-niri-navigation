@@ -41,6 +41,20 @@ function tabGeometry(windows, gap, minimumWidth, referenceWidth) {
     return { widths: widths, starts: starts, totalWidth: end };
 }
 
+function scrollPosition(layout, activeIndex, offset, viewportWidth, revealActive) {
+    const maxOffset = Math.max(0, layout.totalWidth - viewportWidth);
+    let next = Math.max(0, Math.min(maxOffset, offset));
+    if (revealActive && activeIndex >= 0 && activeIndex < layout.widths.length) {
+        const start = layout.starts[activeIndex];
+        const width = layout.widths[activeIndex];
+        if (start < next)
+            next = start;
+        else if (start + width > next + viewportWidth)
+            next = width > viewportWidth ? start : start + width - viewportWidth;
+    }
+    return Math.max(0, Math.min(maxOffset, next));
+}
+
 function workspaceWindows(windows, workspace) {
     if (!workspace)
         return [];

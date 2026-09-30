@@ -23,6 +23,10 @@ Rectangle {
     readonly property bool down: pointer.pressed
     Accessible.name: tooltip
     Accessible.role: Accessible.Button
+    Accessible.onPressAction: {
+        if (button.enabled)
+            button.clicked();
+    }
     opacity: enabled ? 1 : 0.4
     radius: Math.min(Theme.cornerRadius, height / 2)
     color: selected || hovered
@@ -68,6 +72,7 @@ Rectangle {
         anchors.margins: Math.min(4, button.height / 8)
         anchors.leftMargin: button.showAppIcon ? button.appIconSize + 12 : Math.min(4, button.height / 8)
         text: button.text
+        textFormat: Text.PlainText
         color: button.selected ? Theme.primary : Theme.surfaceText
         font.pixelSize: Theme.fontSizeSmall
         elide: Text.ElideRight
@@ -84,7 +89,15 @@ Rectangle {
         onClicked: button.clicked()
     }
 
-    ToolTip.visible: hovered
-    ToolTip.text: tooltip
-    ToolTip.delay: 500
+    ToolTip {
+        id: help
+        visible: button.hovered && button.enabled && button.tooltip.length > 0
+        text: button.tooltip
+        delay: 500
+        contentItem: StyledText {
+            text: help.text
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+        }
+    }
 }
