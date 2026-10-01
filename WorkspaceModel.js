@@ -8,7 +8,16 @@ var icons = ["web", "terminal", "code", "folder", "chat", "mail", "music_note",
     "bug_report", "memory", "storage", "headphones", "videocam", "group",
     "calendar_month", "shopping_cart", "travel_explore", "lightbulb", "bolt",
     "auto_awesome", "diamond", "coffee", "eco", "fitness_center", "language",
-    "description", "calculate", "empty_dashboard"];
+    "description", "calculate", "empty_dashboard",
+    "laptop", "smartphone", "tablet", "monitor", "keyboard", "mouse",
+    "developer_board", "data_object", "api", "hub", "database", "account_tree",
+    "lan", "router", "wifi", "bluetooth", "speaker", "radio", "mic",
+    "library_music", "camera", "photo_camera", "brush", "slideshow", "live_tv",
+    "video_library", "forum", "call", "video_call", "contacts", "notifications",
+    "campaign", "event", "schedule", "timer", "checklist", "task_alt", "note",
+    "bookmark", "article", "explore", "map", "location_on", "directions_bike",
+    "directions_car", "flight", "park", "forest", "restaurant", "celebration",
+    "cake", "savings"];
 
 function validIcon(icon) { return icons.includes(icon); }
 function pinnedIcons(value) {
