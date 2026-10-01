@@ -1,8 +1,8 @@
 {
   "id": "justinNavigation",
   "name": "Justin Navigation",
-  "description": "A workspace-scoped, proportional window icon and title strip for Niri, inspired by Material Shell.",
-  "version": "0.4.1",
+  "description": "Output-scoped window tabs and a scrolling workspace icon rail for Niri, inspired by Material Shell.",
+  "version": "0.5.0",
   "author": "Justin",
   "type": "widget",
   "capabilities": [

@@ -13,7 +13,7 @@ Build a DankMaterialShell plugin for Niri, inspired by Material Shell's navigati
 - Reuse DMS services and theme components. Keep internal Niri-service dependencies in `NiriState.qml` rather than spreading them throughout the UI.
 - Inspect the installed DMS source or a specific upstream revision before using APIs. DMS internals may differ across releases; document the version actually tested.
 - Use Niri IDs for live identity. Workspace indices can change, and IDs should not be assumed to persist across compositor sessions.
-- Scope window/workspace lists to the hosting bar's output. The remaining vertical global count is a diagnostic only.
+- Scope window/workspace lists to the hosting bar's output. The vertical rail includes the hosting output’s trailing empty workspace.
 - Do not name workspaces merely to attach icons. Icons should not change workspace lifetime.
 - Prefer reactive DMS state over polling or creating another IPC connection.
 - Reuse the existing launcher for the plus button. Launching an app can activate an existing window; do not promise every launch creates a new window.
@@ -24,7 +24,7 @@ Build a DankMaterialShell plugin for Niri, inspired by Material Shell's navigati
 
 Run `make check` for changes to the scaffold. Validate interactive QML in DMS when available; distinguish static checks from runtime verification. Do not start/restart a full shell just to perform a static check. Use meaningful model tests when implementing filtering, ordering, or workspace lifecycle behavior; avoid tests that merely assert source text.
 
-Record unfinished behavior and compatibility limits in the docs. The horizontal window strip is implemented; the workspace rail and icons are pending. Do not claim compilation checks establish visible bar behavior. The running shell's config can differ from the installed DMS package; inspect both when diagnosing compatibility.
+Record unfinished behavior and compatibility limits in the docs. The horizontal window strip and workspace rail/icon picker are implemented; visible rail validation and broader automatic icon categories remain pending. Do not claim compilation checks establish visible bar behavior. The running shell's config can differ from the installed DMS package; inspect both when diagnosing compatibility.
 
 ## DMS 1.6.2 compatibility findings
 

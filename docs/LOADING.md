@@ -33,7 +33,7 @@ In plugin settings, **Allow full-width growth** defaults on and removes the old 
 
 Buttons fill the bar height. Adjust **Settings → DankBar → Size** to change that height. Widget **Padding** controls horizontal padding; the horizontal pill background and outline also fill the bar height.
 
-Adding it to a vertical bar currently shows a diagnostic count, not the planned workspace rail.
+Adding it to a vertical bar shows a scrolling workspace icon rail scoped to that bar’s monitor. Left-click navigates; right-click opens the icon picker and pinned favorites.
 
 ## 4. Reload after edits
 
@@ -55,7 +55,7 @@ Check `dms ipc --help` for targets exposed by the running shell. The old local s
 
 ## Top and left bars together
 
-DMS 1.6.2 supports independently configured bars. In Settings → Bar, use **Add Bar**, select the new bar, set its position to **Left**, and choose its widgets. Keep the existing bar at **Top**. The plugin's vertical view remains diagnostic until the workspace rail is implemented; DMS's built-in workspace switcher can be used in the left bar in the meantime.
+DMS 1.6.2 supports independently configured bars. In Settings → Bar, use **Add Bar**, select the new bar, set its position to **Left**, and choose its widgets. Keep the existing bar at **Top**. Add **Justin Navigation** to the left bar for its workspace rail. Each instance follows its hosting monitor; the horizontal instance remains the window strip. This setup is a desktop preference change you make in DMS, not an action performed by repository checks.
 
 ## Troubleshooting
 

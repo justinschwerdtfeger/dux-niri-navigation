@@ -8,7 +8,7 @@ The running `dms.service` invokes `/usr/bin/dms run --session`. Its embedded UI 
 
 The 1.6.2 repair replaced the Qt Quick Controls button with an explicitly sized rectangle, DMS `StyledText`, and a `MouseArea`. In the running host, the former controls displayed backgrounds without their labels. After a shell restart, screenshots confirmed labels and controls on DP-2 and the empty-workspace view on eDP-1. Plugin reload alone retained cached helper components: do not mistake a successful reload response for loading every changed QML file.
 
-The left workspace rail and custom icons remain pending. The vertical plugin still displays a diagnostic count. No second bar was added by the compatibility repair.
+The left workspace rail and icon picker are now implemented and passed isolated QML checks with mocked services. Visible rail/picker behavior in the running DMS host remains unverified. Repository work does not add a desktop bar.
 
 The explicitly requested desktop configuration audit is recorded in [Configuration](CONFIGURATION.md). Routine repository checks never modify desktop settings.
 
@@ -248,3 +248,27 @@ An isolated offscreen Quickshell helper reproduced intermediate displacement bef
 ## Flipped default scrolling direction
 
 The `reverseScroll` default is now false in settings, the widget’s absent-value fallback, the strip, and the pure wheel model. With DMS reverse scrolling off, up/left focuses the previous column and down/right the next. Explicit saved preferences remain honored. Model tests verify the new default, both axes, accumulated input, and composition with DMS and widget reversal; `make check` passes. No desktop settings were edited.
+
+
+## Workspace rail and icon picker
+
+Inspected the installed and active embedded DMS 1.6.2 sources: `Services/NiriService.qml` (`allWorkspaces`, `windows`, `switchToWorkspace`), `Modules/Plugins/PluginComponent.qml`/`BasePill.qml`, `Modules/DankBar/CenterSection.qml`, `Services/PluginService.qml` (`savePluginData`), `Widgets/DankPopout.qml`, and the bundled `DankCommon` icon/font, picker, button, text-field, and scrollbar components. DMS's Material Symbols Rounded font is the monochrome source; the plugin uses `DankIcon` rather than adding icon assets. DMS's stock picker supplied the category precedent; a custom DMS-themed grid adds persistent favorites and excludes text icons.
+
+`WorkspaceModel.js` filters/sorts by output and workspace index without treating indices as identity. It seeds a category from the first observed window (lowest ID on initial loading), retains that seed, validates overrides, and cleans removed IDs. `state/WorkspaceIcons.qml` is a local singleton holding ephemeral assignments across widget instances. All compositor access remains in `NiriState`, including guarded `switchToWorkspace(id)` calls. Pins are ordered symbol names saved under `pinnedWorkspaceIcons` via the injected plugin service; assignment IDs are never persisted. Availability changes clear assignments through empty state. Reconnect/session-ID reuse without an unavailable snapshot is a documented limit.
+
+`WorkspaceRail` updates a ListModel incrementally by ID, preserving delegates and manual scroll on unchanged active-workspace snapshots. Active changes reveal the selected row. `BarGeometry` adapts the existing section budget to either primary axis; vertical height reserves siblings, neighboring sections, gaps, and actual pill padding. An empty output collapses the rail. The clicked button anchors a `DankPopout`; stale workspace editing closes it. The icon grid and pinned section have bounded scrollable heights. Picker selection remains open for subsequent right-click pinning.
+
+`make check` includes five meaningful workspace-model tests covering output ordering, dynamic empty workspaces, first-window inference, stable seeds, floating windows, custom overrides, renumbering/output movement, removal/reuse, invalid actions, and pin sanitization/order. Offscreen Quickshell 0.3.1/QtTest helpers exercised actual left/right mouse events, bounded rail overflow, active browser icons, selection and pinning, shared adapter assignments, cross-output/stale/non-Niri guards, removal cleanup, and actual widget signal wiring with mocked DMS services. Separate helpers checked reactive pin saving/reset/removal dismissal, axis budgets with sibling/monitor resizing and horizontal regression, and delegate/manual-scroll preservation with active-workspace reveal. These helpers use stub visuals and send no real compositor requests. Their sandbox-blocked IPC listener is unrelated to the assertions.
+
+Visible DMS acceptance remains: left-bar placement, native wheel/touchpad delivery, icon glyph rendering, popup positioning/dismissal, favorite persistence across a real restart, multi-monitor output changes, and dynamic workspace removal. The new QML components pass language-server diagnostics; the existing dynamic host-property and window-strip tooltip typing warnings remain. No live plugin reload, shell restart, or desktop configuration edit was performed. Helper caching after plugin reload remains the known compatibility limit.
+
+
+## Workspace popup placement and clipped controls
+
+The user’s live screenshot showed the picker overlapping the left rail and the buttons/search clipped on the right. The original trigger used the clicked icon’s x coordinate; DMS 1.6.2’s standalone popup treats that as the popup’s left edge. `NavigationWidget` now uses the inspected active `SettingsData.getPopupTriggerPosition` helper, which offsets left-bar popups past the bar thickness, bar spacing, and configured popup gap (and mirrors right-bar placement). Both DMS popup backends size their content Loader to the popup surface. Loading the inset Column directly therefore replaced its explicit width while leaving its x margin, causing the right edge to overflow. A loader-sized outer Item now contains a picker sized from its parent minus both theme margins; natural height includes both margins.
+
+An isolated offscreen QML helper now models DMS’s sized Loader and uses the exact extracted DMS trigger-position helper. It verifies left-bar clearance, picker padding, every visible control’s right bound, and the existing selection/reset/pin behavior. `make check` passes. The user screenshot confirms the earlier picker rendered in DMS; visible validation of this correction remains pending. No live reload, shell restart, or desktop configuration edits were performed.
+
+At the user’s request, the popup width increased from 320 to 336 pixels and the main icon grid height from 180 to 264 pixels, adding almost two visible rows. The popup still derives its overall height from the padded content. `make check` passes; visible sizing after reload remains to be confirmed. No shell restart or desktop settings changes were performed.
+
+The picker was simplified at the user’s request: removed the pin-current and automatic-reset buttons, their unused reset signal wiring, and the pinning help text. Right-click pin/unpin and saved favorites remain available. The popup’s natural height contracts with the removed controls; the 336-pixel width and 264-pixel icon grid remain. `make check` passes; visible DMS verification remains pending.

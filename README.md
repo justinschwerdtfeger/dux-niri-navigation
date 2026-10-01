@@ -4,7 +4,7 @@ A DMS plugin project for Material Shell-inspired navigation on Niri: window icon
 
 The horizontal widget shows app icons for windows on the workspace active on its monitor, ordered by Niri's layout. Each tab shows its icon and the window's own title, without an added application name. Width follows the window's visual width at a stable monitor-based scale; small tabs have a readability minimum. **Window tab width** in plugin settings adjusts the scale (120–480 px for a monitor-wide window, default 240 px). Long titles elide; hovering shows the application name and window title in a native DMS tooltip, which uses DMS’s single-line width limit. Held window tabs use an opaque theme background so overlapping titles stay covered. Press the left mouse button on a window tab to focus its window immediately, or middle-click to request that it close; left-drag a tab to reorder the actual Niri windows while neighboring tabs slide aside as its leading edge overlaps 50% of their width, use the arrows or hold a dragged tab near the viewport edge to reach overflow, and click **+** to open DMS's launcher. Scroll up/left over the widget to focus Niri’s previous column, or down/right for the next column; DMS reverse scrolling reverses those directions. Wheel input has no timed cooldown; fast and coalesced wheel steps are preserved. The plugin’s **Reverse scroll direction** toggle defaults off; turn it on to invert DMS’s normal direction. Manual overflow browsing stays in place across state updates until the active window changes. Floating windows are excluded; tiled windows without layout positions follow positioned windows in ID order. Both arrows sit on the right before **+**. Arrows appear only when the strip reaches its width ceiling and overflows; expanding to fit a new window does not briefly show them. With no tiled windows, only **+** is shown.
 
-The vertical widget is still a diagnostic workspace count across all outputs, including Niri's trailing empty workspace. Workspace buttons and custom icons are the next milestone.
+The vertical widget is a scrolling workspace icon rail for the hosting monitor. It shows one monochrome Material Symbols icon per workspace, highlights the active workspace, and keeps Niri's trailing empty workspace available. Left-click switches to that workspace. Right-click opens a themed, searchable icon picker beside the bar, with padded controls and a taller icon grid: choose an icon or pin favorites for later. Right-click any icon in the picker to pin/unpin it. Pinned icons appear first and persist through DMS settings; workspace icon assignments last for the shell session and disappear when the workspace is removed. Automatic selection uses the first observed window, with simple categories such as a browser icon for Firefox or Helium; an empty workspace starts with an empty-workspace icon.
 
 Switching workspaces fades and gently slides the new window tabs into place. When windows open or close, surviving tabs slide into their new positions and new tabs fade in. The strip also eases its width as windows change, keeping each tab's proportional width and the hosting bar's width ceiling. Automatic focus scrolling waits for width growth to settle so adding a rightmost window does not shift earlier tabs temporarily. Transitions follow DMS's animation speed setting and snap when animations are disabled. Visible animation in the running DMS session still needs verification.
 
@@ -34,6 +34,8 @@ In DMS Settings → Plugins, scan for plugins, enable **Justin Navigation**, the
 
 Application icons use 85% of the available icon slot; arrows and plus retain their size. Hover and press highlighting applies to individual buttons. Buttons use the full DMS bar height. In **Settings → DankBar**, select the bar and adjust **Size** to change its height. **Padding** and **Remove Widget Padding** control horizontal padding around this plugin, not its button height. The horizontal pill background and outline also fill the bar height.
 
+For the workspace rail, add **Justin Navigation** to a DMS bar positioned **Left**. The same plugin renders the window strip on horizontal bars and the workspace rail on vertical bars. This repository change does not create or reconfigure desktop bars.
+
 After edits, use the plugin's **Reload** button in Settings → Plugins, or:
 
 ```bash
@@ -54,7 +56,7 @@ An optional setup script generates local DMS imports for VS Code. Install the of
 make check
 ```
 
-Requires Python 3 and Node.js. This validates packaging, checks the setup script's syntax, runs window-model and tooling recovery tests, checks the link script's syntax, and checks patch whitespace. It does not compile QML. Earlier widget versions were loaded in DMS 1.6.2 and screenshots confirmed rendering. A user-authorized DMS restart confirmed the latest wheel handler loaded in both horizontal instances without plugin QML errors. Live rapid scrolling and visual interaction checks still need confirmation. Click, overflow, and launcher interaction checks remain. See [development notes](docs/DEVELOPMENT.md).
+Requires Python 3 and Node.js. This validates packaging, checks the setup script's syntax, runs window/workspace-model and tooling recovery tests, checks the link script's syntax, and checks patch whitespace. It does not compile QML. Earlier widget versions were loaded in DMS 1.6.2 and screenshots confirmed rendering. A user-authorized DMS restart confirmed the latest wheel handler loaded in both horizontal instances without plugin QML errors. Live rapid scrolling and visual interaction checks still need confirmation. The workspace rail passed isolated QML checks with mocked services; visible DMS rail/picker behavior remains unverified. Click, overflow, and launcher interaction checks remain. See [development notes](docs/DEVELOPMENT.md).
 
 ## Project map
 
@@ -65,6 +67,11 @@ Requires Python 3 and Node.js. This validates packaging, checks the setup script
 | `BarGeometry.qml` | Adapter for DMS bar content bounds and sibling sizing |
 | `NiriState.qml` | Boundary around DMS compositor services |
 | `WindowModel.js` | Pure output filtering and window-ordering logic |
+| `WorkspaceModel.js` | Workspace filtering, icon categories, assignment lifecycle, and favorites |
+| `state/WorkspaceIcons.qml` | Shared session-local workspace icons |
+| `WorkspaceRail.qml` | Bounded scrolling workspace navigation |
+| `WorkspaceIconMenu.qml` | Themed searchable icon picker and pinned favorites |
+| `WorkspaceButton.qml` | Monochrome workspace/icon button |
 | `WindowStrip.qml` | Proportional icon/title strip and navigation controls |
 | `NavigationButton.qml` | Themed icon/action button |
 | `NavigationSettings.qml` | DMS-integrated settings |

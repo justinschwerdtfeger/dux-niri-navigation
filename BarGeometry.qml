@@ -7,26 +7,30 @@ QtObject {
     required property Item widget
 
     readonly property var host: findHost()
-    readonly property real availableWidth: {
-        if (!host || widget.isVertical)
+    readonly property real availableWidth: widget.isVertical ? 0 : availablePrimarySize
+    readonly property real availableHeight: widget.isVertical ? availablePrimarySize : 0
+    readonly property real availablePrimarySize: {
+        if (!host)
             return 0;
+        const vertical = widget.isVertical;
+        const size = item => vertical ? item.height : item.width;
         const stack = host.section.parent;
         const left = stack.children.find(child => child.objectName === "leftSection");
         const center = stack.children.find(child => child.objectName === "centerSection");
         const right = stack.children.find(child => child.objectName === "rightSection");
-        if (!left || !center || !right || stack.width <= 0)
+        if (!left || !center || !right || size(stack) <= 0)
             return 0;
-        // Never read our own section width: it depends on this very budget.
+        // Never read our own section size: it depends on this very budget.
         const siblings = host.layout.children.filter(child =>
-            child !== host.wrapper && "itemData" in child && child.visible && child.width > 0);
-        const siblingWidths = siblings.map(child => child.width);
-        const padding = widget.horizontalPillHost?.horizontalPadding ?? widget.pillPadding;
-        return WindowModel.barWidthBudget(stack.width, widget.section,
-            widget.section === "left" ? 0 : left.width,
+            child !== host.wrapper && "itemData" in child && child.visible && size(child) > 0);
+        const siblingSizes = siblings.map(size);
+        const padding = widget.activePillHost?.horizontalPadding ?? widget.pillPadding;
+        return WindowModel.barWidthBudget(size(stack), widget.section,
+            widget.section === "left" ? 0 : size(left),
             widget.section === "center" ? 0 : center.contentStart,
             widget.section === "center" ? 0 : center.contentSize,
-            widget.section === "right" ? 0 : right.width,
-            siblingWidths, host.layout.widgetSpacing, padding);
+            widget.section === "right" ? 0 : size(right),
+            siblingSizes, host.layout.widgetSpacing, padding);
     }
 
     function findHost() {

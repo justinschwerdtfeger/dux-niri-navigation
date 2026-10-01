@@ -4,7 +4,7 @@
 
 Use a plugin on top of DMS, with Niri retaining control of tiling, focus, scrolling, and dynamic workspace lifetime. Use DMS's existing bars, theme, launcher, and settings.
 
-The target is a top strip of window icons and titles and a left rail of workspaces. Initially, one widget can render different content in horizontal and vertical bars. Confirm that independently configured instances and shared state behave correctly before adding icon editing.
+The target is a top strip of window icons and titles and a left rail of workspaces. The same plugin renders window tabs in horizontal bars and workspace icons in vertical bars. Icon assignments are shared between instances within the shell session.
 
 ## Window strip
 
@@ -32,23 +32,27 @@ The adapter realizes a drop through adjacent swaps, awaiting reactive focus and 
 
 Show the output's workspaces in Niri order. Preserve normal dynamic workspace behavior, including the trailing empty workspace. An ordinary empty workspace can remain while active; do not forcibly delete workspaces or equate every empty workspace with an immediately removed one.
 
-Use workspace IDs for session-local icon assignments. Remove an assignment when its workspace leaves Niri's state. Do not key icons by numeric position or persist runtime IDs across sessions. Icons across multiple widget instances need shared session state; choose that mechanism in the workspace milestone.
+Use workspace IDs for session-local icon assignments. The local `state/WorkspaceIcons` singleton shares reactive assignments between plugin instances; `NiriState` reconciles it against all outputs so one monitor cannot discard another's icons. Remove an assignment when its workspace leaves Niri's state. Do not key icons by numeric position or persist runtime IDs across sessions. Assigning an icon never names or retains a workspace. A shell restart resets assignments, and compositor unavailability clears them. A compositor reconnect that reuses IDs without an observed unavailable/empty snapshot can retain stale assignments; detecting a compositor-session generation remains future work.
 
-A rail plus button can focus the existing trailing empty workspace. Do not create persistent named workspaces to simulate a blank workspace.
+Use DMS's bundled Material Symbols Rounded font through `DankIcon`, with a single theme color and active-state primary color. A curated set of 48 symbols covers browser, terminal, development, files, communication, media, and general workspace uses. This requires no added icon downloads or multi-color application assets. A workspace without windows initially uses `empty_dashboard`; its first observed window seeds a category icon. When first loading into an existing session, choose the lowest window ID as an approximation of the earliest opened window. Floating windows can seed a workspace icon. Retain the seed when that window closes or other applications arrive. Firefox/Helium and several common browser IDs map to `web`; the initial classifier is deliberately small, with `desktop_windows` for unknown applications. Broader desktop-entry/category inference is future work.
+
+Left-click focuses the live workspace ID through DMS's existing Niri service. Right-click opens `DankPopout` beside the hosting bar on its output, using DMS’s `getPopupTriggerPosition` to clear the bar and its configured popup gap while retaining the clicked button’s vertical position. A loader-sized outer Item holds an inset picker, so DMS’s content Loader cannot override the picker’s padded width. Its picker uses DMS text fields, colors, and scrollbars; selections update immediately and keep the picker open so the current choice can be pinned. Escape or an outside click dismisses it; workspace removal/output movement dismisses stale editing. The 336-pixel-wide picker has a 264-pixel-tall icon grid (six rows), searchable by symbol name, with a bounded pinned section first. Right-click a picker icon to pin/unpin it. Only the ordered favorite symbol names are persisted using DMS's plugin settings; favorites never represent persistent workspaces. The picker contains the workspace heading, search, pinned icons, and all-icons grid; it has no pin-current or automatic-reset buttons and no pinning help text.
+
+The rail preserves live-ID delegates across state snapshots, reveals an activated workspace, and retains manual overflow browsing on snapshots without an active-workspace change. Its height grows with the workspace list until the hosting bar's available primary-axis space is exhausted, accounting for sibling widgets, neighboring sections, gaps, and pill padding through `BarGeometry`. Wheel/touch scrolling browses the rail; workspace activation requires clicking. The trailing empty workspace is itself navigable, so the rail does not add a separate plus button.
 
 ## Milestones
 
 1. **Load the scaffold:** validate horizontal/vertical placement, settings, service updates, and error-free reload in the actual DMS session.
 2. **Window navigation:** implemented output-aware filtering, layout ordering, title buttons, active state, bounded overflow, and launcher action; rendering verified in DMS 1.6.2; click and overflow interaction checks remain.
-3. **Workspace navigation:** add output-aware workspace buttons and active state while preserving dynamic lifetime.
-4. **Workspace icons:** add editing and shared session-local assignments, with cleanup on workspace removal.
+3. **Workspace navigation:** implemented output-aware, bounded scrolling buttons and active state; visible DMS/multi-monitor validation remains.
+4. **Workspace icons:** implemented monochrome categories, editing, shared session assignments, removal cleanup, and persistent picker favorites; broader automatic classification remains.
 5. **Polish:** keyboard access where supported, hover labels, urgency indication, and multi-monitor/reconnect behavior.
 
 ## Open implementation questions
 
 - How much space does DMS make available to a plugin in each bar section?
 - Which DMS launcher action reliably opens on the hosting bar's output?
-- How should two plugin instances share ephemeral icons without saving stale IDs?
+- How should compositor-session changes be detected when DMS reconnects without an unavailable snapshot?
 
 Resolve these by inspecting upstream code and testing small changes, without expanding into unrelated shell features.
 

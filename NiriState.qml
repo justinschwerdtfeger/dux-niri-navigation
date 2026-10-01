@@ -1,15 +1,19 @@
 import QtQuick
 import qs.Services
 import "WindowModel.js" as WindowModel
+import "WorkspaceModel.js" as WorkspaceModel
+import "state" as Session
 
 // Keep access to DMS's internal compositor services in one place.
-// Counts currently cover all outputs, including Niri's trailing empty workspace.
+// All-workspace snapshots also reconcile shared session icons.
 QtObject {
     id: state
     property string outputName: ""
     readonly property bool available: CompositorService.isNiri
     readonly property var windows: available ? NiriService.windows : []
     readonly property var workspaces: available ? NiriService.allWorkspaces : []
+    readonly property var outputWorkspaces: WorkspaceModel.outputWorkspaces(workspaces, outputName)
+    readonly property var workspaceIcons: Session.WorkspaceIcons.assignments
     readonly property int windowCount: windows.length
     readonly property int workspaceCount: workspaces.length
     readonly property var activeWorkspace: WindowModel.activeWorkspace(workspaces, outputName)
@@ -21,7 +25,10 @@ QtObject {
         onTriggered: state.cancelReorder()
     }
 
-    onWindowsChanged: Qt.callLater(advanceReorder)
+    function syncWorkspaceIcons() { Session.WorkspaceIcons.sync(workspaces, windows); }
+    Component.onCompleted: syncWorkspaceIcons()
+    onWorkspacesChanged: Qt.callLater(syncWorkspaceIcons)
+    onWindowsChanged: { Qt.callLater(advanceReorder); Qt.callLater(syncWorkspaceIcons); }
     onActiveWorkspaceChanged: Qt.callLater(advanceReorder)
     onOutputNameChanged: cancelReorder()
     onAvailableChanged: { if (!available) cancelReorder(); }
@@ -108,6 +115,17 @@ QtObject {
             if (!NiriService.send({ "Action": action }))
                 cancelReorder();
         }
+    }
+
+    function focusWorkspace(workspaceId) {
+        cancelReorder();
+        if (available && WorkspaceModel.canFocus(workspaces, outputName, workspaceId))
+            NiriService.switchToWorkspace(workspaceId);
+    }
+
+    function setWorkspaceIcon(workspaceId, icon) {
+        if (available && WorkspaceModel.canFocus(workspaces, outputName, workspaceId))
+            Session.WorkspaceIcons.setIcon(workspaceId, icon);
     }
 
     function scrollColumn(direction) {
