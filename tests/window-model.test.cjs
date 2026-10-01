@@ -202,12 +202,12 @@ test('occupied adjacent sections constrain growth on the correct side', () => {
 });
 
 
-test('wheel navigation uses either axis, reversed widget direction, and DMS reverse scrolling', () => {
+test('wheel navigation uses either axis, normal widget direction, and DMS reverse scrolling', () => {
     const empty = { axis: '', source: '', value: 0 };
-    assert.equal(model.wheelNavigation(empty, 0, -120, 0, 0, false).direction, -1);
-    assert.equal(model.wheelNavigation(empty, 0, 120, 0, 0, false).direction, 1);
-    assert.equal(model.wheelNavigation(empty, -120, 10, 0, 0, false).direction, -1);
-    assert.equal(model.wheelNavigation(empty, 0, -120, 0, 0, true).direction, 1);
+    assert.equal(model.wheelNavigation(empty, 0, -120, 0, 0, false).direction, 1);
+    assert.equal(model.wheelNavigation(empty, 0, 120, 0, 0, false).direction, -1);
+    assert.equal(model.wheelNavigation(empty, -120, 10, 0, 0, false).direction, 1);
+    assert.equal(model.wheelNavigation(empty, 0, -120, 0, 0, true).direction, -1);
     assert.equal(model.wheelNavigation(empty, 0, 0, 0, 0, false).direction, 0);
 });
 
@@ -216,26 +216,26 @@ test('wheel navigation accumulates smooth input and resets across unit or axis c
     let state = model.wheelNavigation(empty, 0, -60, 0, 0, false);
     assert.equal(state.direction, 0);
     state = model.wheelNavigation(state, 0, -60, 0, 0, false);
-    assert.equal(state.direction, -1);
+    assert.equal(state.direction, 1);
     assert.equal(state.value, 0);
     state = model.wheelNavigation(empty, 0, -60, 0, -20, false);
     assert.equal(state.direction, 0);
-    assert.equal(model.wheelNavigation(state, 0, -60, 0, -20, false).direction, -1);
+    assert.equal(model.wheelNavigation(state, 0, -60, 0, -20, false).direction, 1);
     assert.equal(model.wheelNavigation(state, -60, 0, 0, 0, false).direction, 0);
     state = model.wheelNavigation(empty, 0, 0, 0, -25, false);
     assert.equal(state.direction, 0);
-    assert.equal(model.wheelNavigation(state, 0, 0, 0, -25, false).direction, -1);
+    assert.equal(model.wheelNavigation(state, 0, 0, 0, -25, false).direction, 1);
 });
 
 
-test('widget scroll option defaults to reversed and composes with the DMS preference', () => {
+test('widget scroll option defaults to normal and composes with the DMS preference', () => {
     const empty = { axis: '', source: '', value: 0 };
     for (const dmsReverse of [false, true]) {
         for (const deltas of [[0, -120, 0, 0], [-120, 0, 0, 0], [0, -500, 0, -20], [0, 0, 0, -50]]) {
             const current = model.wheelNavigation(empty, ...deltas, dmsReverse);
             const reversed = model.wheelNavigation(empty, ...deltas, dmsReverse, true);
             const normal = model.wheelNavigation(empty, ...deltas, dmsReverse, false);
-            assert.equal(reversed.direction, current.direction);
+            assert.equal(normal.direction, current.direction);
             assert.equal(normal.direction, -reversed.direction);
             assert.equal(normal.direction, dmsReverse ? -1 : 1);
         }
@@ -316,4 +316,92 @@ test('configurable tab width scales independently and preserves the readability 
     assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920, 50).widths), [96, 120, 96]);
     for (const invalid of [NaN, Infinity, 0, -1, null])
         assert.deepEqual(plain(model.tabGeometry(windows, 4, 96, 1920, invalid).widths), [120, 240, 96]);
+});
+
+test('drop targets use the dragged rectangle, skip the dragged tab, and handle either end', () => {
+    const windows = [{id:1,visualWidth:1920}, {id:2,visualWidth:960}, {id:3,visualWidth:1920}];
+    const geometry = model.tabGeometry(windows, 4, 96, 1920);
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 2, -10)),
+        {targetId:1, after:false});
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 2, 300)),
+        {targetId:3, after:false});
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 2, 1000)),
+        {targetId:3, after:true});
+    assert.equal(model.tabDropTarget([{id:1}], {starts:[0],widths:[240]}, 1, 50), null);
+    assert.equal(model.tabDropTarget(windows, geometry, 2, NaN), null);
+});
+
+test('reordering chooses adjacent stack moves or column swaps and rejects invalid targets', () => {
+    const windows = [window(1,1,1),window(2,1,2),window(3,2,1),window(4,3,1)];
+    assert.equal(model.reorderStep(windows, workspace, 1, 2, true).action, 'MoveWindowDown');
+    assert.equal(model.reorderStep(windows, workspace, 2, 1, false).action, 'MoveWindowUp');
+    const cross = model.reorderStep(windows, workspace, 2, 3, true);
+    assert.equal(cross.action, 'SwapWindowRight');
+    assert.equal(cross.crossColumn, true);
+    assert.equal(cross.neighborId, 3);
+    assert.deepEqual(plain(cross.expectedIds), [1,3,2,4]);
+    assert.equal(model.reorderStep(windows, workspace, 3, 2, false).action, 'SwapWindowLeft');
+    assert.equal(model.reorderStep(windows, workspace, 2, 3, false).done, true);
+    for (const [sourceId,targetId] of [[1,1],[99,1],[1,99]])
+        assert.equal(model.reorderStep(windows, workspace, sourceId, targetId, true), null);
+    assert.equal(model.reorderStep(windows, null, 1, 3, true), null);
+    assert.equal(model.reorderStep([window(1,1),window(2,3)], workspace, 1, 2, true), null);
+    assert.equal(model.reorderStep([window(1,1),window(2,2,1,{is_floating:true})], workspace, 1, 2, true), null);
+    assert.equal(model.reorderStep([window(1,1),window(2,2,1,{layout:{}})], workspace, 1, 2, true), null);
+});
+
+test('reactive adjacent steps reach every insertion order across mixed stacks without moving other workspaces', () => {
+    const original = [window(1,1,1),window(2,1,2),window(3,2,1),window(4,3,1),window(5,3,2)];
+    for (const source of original) for (const target of original) for (const after of [false,true]) {
+        if (source.id === target.id) continue;
+        const input = structuredClone(original);
+        const untouched = window(90,1,1,{workspace_id:20});
+        input.push(untouched);
+        const expected = original.map(w => w.id).filter(id => id !== source.id);
+        expected.splice(expected.indexOf(target.id) + (after ? 1 : 0), 0, source.id);
+        let complete = false;
+        for (let count=0; count < original.length; count++) {
+            const step = model.reorderStep(input, workspace, source.id, target.id, after);
+            assert.ok(step);
+            if (step.done) { complete=true; break; }
+            const a = input.find(w => w.id === source.id);
+            const b = input.find(w => w.id === step.neighborId);
+            const pos = a.layout.pos_in_scrolling_layout;
+            a.layout.pos_in_scrolling_layout = b.layout.pos_in_scrolling_layout;
+            b.layout.pos_in_scrolling_layout = pos;
+            assert.deepEqual(plain(model.workspaceWindows(input,workspace)).map(w=>w.id), plain(step.expectedIds));
+        }
+        assert.ok(complete);
+        assert.deepEqual(plain(model.workspaceWindows(input,workspace)).map(w=>w.id), expected);
+        assert.equal(input.find(w=>w.id===90), untouched);
+    }
+});
+
+test('drag preview opens the insertion gap using individual widths and leaves unrelated tabs in place', () => {
+    const windows = [{id:1,visualWidth:1920}, {id:2,visualWidth:960}, {id:3,visualWidth:2880}, {id:4,visualWidth:1920}];
+    const geometry = model.tabGeometry(windows, 4, 96, 1920);
+    assert.deepEqual(plain(model.tabDragOffsets(windows, geometry, 1, {targetId:3,after:true}, 4)),
+        [488,-244,-244,0]);
+    assert.deepEqual(plain(model.tabDragOffsets(windows, geometry, 3, {targetId:1,after:false}, 4)),
+        [364,364,-368,0]);
+    assert.deepEqual(plain(model.tabDragOffsets(windows, geometry, 2, {targetId:3,after:false}, 4)),
+        [0,0,0,0]);
+    for (const [source,target] of [[null,null],[99,{targetId:3,after:true}],[1,{targetId:99,after:false}]])
+        assert.deepEqual(plain(model.tabDragOffsets(windows, geometry, source, target, 4)), [0,0,0,0]);
+    assert.deepEqual(plain(model.tabDragOffsets([], {starts:[],widths:[]}, 1, null, 4)), []);
+    assert.deepEqual(windows.map(w=>w.id), [1,2,3,4], 'preview does not change compositor order');
+});
+
+
+test('neighbors move aside at 50% overlap of the leading edge in either direction', () => {
+    const windows = [{id:1,visualWidth:1920}, {id:2,visualWidth:960}, {id:3,visualWidth:1920}];
+    const geometry = model.tabGeometry(windows, 4, 96, 1920);
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 1, 0)), {targetId:2,after:false});
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 1, 63)), {targetId:2,after:false});
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 1, 64)), {targetId:2,after:true});
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 3, 368)), {targetId:2,after:true});
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 3, 305)), {targetId:2,after:true});
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 3, 304)), {targetId:2,after:false});
+    assert.deepEqual(plain(model.tabDropTarget(windows, geometry, 1, 63)), {targetId:2,after:false}, 'returning across threshold restores slot');
+    assert.equal(model.tabDropTarget(windows, geometry, 99, 100), null);
 });

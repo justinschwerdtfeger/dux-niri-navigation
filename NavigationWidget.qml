@@ -63,6 +63,7 @@ PluginComponent {
             windows: niri.currentWindows
             workspaceId: niri.activeWorkspace?.id ?? null
             available: niri.available
+            reorderBusy: niri.reorderBusy
             maximumWidth: navigation.stripWidth
             // Match the full-height horizontal BasePill.
             buttonHeight: navigation.barThickness
@@ -71,10 +72,11 @@ PluginComponent {
             parentScreen: navigation.parentScreen
             barEdge: navigation.axis?.edge ?? "top"
             barSpacing: navigation.barSpacing
-            reverseScroll: navigation.pluginData.reverseScroll !== false
+            reverseScroll: navigation.pluginData.reverseScroll === true
             onColumnScrollRequested: direction => niri.scrollColumn(direction)
             onWindowActivated: windowId => niri.focusWindow(windowId)
             onWindowCloseRequested: windowId => niri.closeWindow(windowId)
+            onWindowReorderRequested: (windowId, targetId, after) => niri.reorderWindow(windowId, targetId, after)
             // DMS chooses the launcher's output; this API does not accept a screen.
             onLauncherRequested: PopoutService.openDankLauncherV2()
         }

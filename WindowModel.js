@@ -30,6 +30,80 @@ function activeWorkspace(workspaces, outputName) {
     return workspaces.find(ws => ws.output === outputName && ws.is_active) || null;
 }
 
+function tabDropTarget(windows, geometry, sourceId, left) {
+    const source = windows.findIndex(window => window.id === sourceId);
+    if (source < 0 || windows.length < 2 || !Number.isFinite(left))
+        return null;
+    let target = source < windows.length - 1
+        ? { targetId: windows[source + 1].id, after: false }
+        : { targetId: windows[source - 1].id, after: true };
+    // Open a gap once the leading edge overlaps 50% of the neighbor.
+    // Use original geometry so animated preview positions cannot affect targeting.
+    if (left >= geometry.starts[source]) {
+        const right = left + geometry.widths[source];
+        for (let index = source + 1; index < windows.length; index++) {
+            if (right < geometry.starts[index] + geometry.widths[index] * 0.5)
+                break;
+            target = { targetId: windows[index].id, after: true };
+        }
+    } else {
+        for (let index = source - 1; index >= 0; index--) {
+            if (left > geometry.starts[index] + geometry.widths[index] * 0.5)
+                break;
+            target = { targetId: windows[index].id, after: false };
+        }
+    }
+    return target;
+}
+
+function tabDragOffsets(windows, geometry, sourceId, target, gap) {
+    const offsets = windows.map(() => 0);
+    const source = windows.findIndex(window => window.id === sourceId);
+    if (source < 0 || !target)
+        return offsets;
+    const order = windows.map((window, index) => index).filter(index => index !== source);
+    const destination = order.findIndex(index => windows[index].id === target.targetId);
+    if (destination < 0)
+        return offsets;
+    order.splice(destination + (target.after ? 1 : 0), 0, source);
+    let start = 0;
+    order.forEach(index => {
+        offsets[index] = start - geometry.starts[index];
+        start += geometry.widths[index] + gap;
+    });
+    return offsets;
+}
+
+// One adjacent swap at a time; the adapter waits for focus/layout events.
+function reorderStep(windows, workspace, sourceId, targetId, after) {
+    const ordered = workspaceWindows(windows, workspace);
+    const ids = ordered.map(window => window.id);
+    const source = ids.indexOf(sourceId);
+    const target = ids.indexOf(targetId);
+    if (source < 0 || target < 0 || source === target)
+        return null;
+    const destination = target + (after ? 1 : 0) - (source < target ? 1 : 0);
+    if (source === destination)
+        return { done: true };
+    const direction = source < destination ? 1 : -1;
+    const neighbor = source + direction;
+    const sourceWindow = windows.find(window => window.id === sourceId);
+    const neighborWindow = windows.find(window => window.id === ids[neighbor]);
+    const a = layoutPosition(sourceWindow);
+    const b = layoutPosition(neighborWindow);
+    if (![a[0], a[1], b[0], b[1]].every(value => Number.isInteger(value) && value > 0))
+        return null;
+    const crossColumn = a[0] !== b[0];
+    if (crossColumn ? Math.abs(a[0] - b[0]) !== 1 : Math.abs(a[1] - b[1]) !== 1)
+        return null;
+    const expectedIds = ids.slice();
+    [expectedIds[source], expectedIds[neighbor]] = [expectedIds[neighbor], expectedIds[source]];
+    return { done: false, neighborId: ids[neighbor], crossColumn: crossColumn,
+        action: crossColumn ? (direction > 0 ? "SwapWindowRight" : "SwapWindowLeft")
+            : (direction > 0 ? "MoveWindowDown" : "MoveWindowUp"),
+        ids: ids, expectedIds: expectedIds };
+}
+
 function layoutPosition(window) {
     const pos = window.layout?.pos_in_scrolling_layout;
     if (window.is_floating || !Array.isArray(pos) || pos.length < 2
@@ -108,7 +182,7 @@ function barWidthBudget(barWidth, section, leftWidth, centerStart, centerWidth,
 }
 
 // One angle-based notch is always 120 units, even with accompanying pixel data.
-function wheelNavigation(previous, angleX, angleY, pixelX, pixelY, reverse, reverseWidget = true) {
+function wheelNavigation(previous, angleX, angleY, pixelX, pixelY, reverse, reverseWidget = false) {
     const hasAngle = angleX !== 0 || angleY !== 0;
     const axis = Math.abs(hasAngle ? angleX : pixelX) > Math.abs(hasAngle ? angleY : pixelY) ? "x" : "y";
     const angle = axis === "x" ? angleX : angleY;

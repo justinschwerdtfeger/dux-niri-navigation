@@ -22,6 +22,11 @@ Rectangle {
     property bool urgent: false
     property string tooltip: text
     property bool acceptMiddleClick: false
+    property bool dragEnabled: false
+    property bool activateOnPress: false
+    property bool opaqueBackground: false
+    readonly property color highlightColor: selected || hovered
+        ? Theme.withAlpha(Theme.primary, down ? 0.25 : 0.12) : "transparent"
 
     readonly property bool hovered: pointer.containsMouse
     readonly property bool down: pointer.pressed
@@ -35,13 +40,25 @@ Rectangle {
     }
     opacity: enabled ? 1 : 0.4
     radius: Math.min(Theme.cornerRadius, height / 2)
-    color: selected || hovered
-        ? Theme.withAlpha(Theme.primary, down ? 0.25 : 0.12) : "transparent"
+    color: opaqueBackground ? Theme.withAlpha(Theme.surfaceContainerHigh, 1) : highlightColor
     border.width: urgent ? 1 : 0
     border.color: Theme.primary
 
+    Rectangle {
+        anchors.fill: parent
+        radius: button.radius
+        visible: button.opaqueBackground
+        color: button.highlightColor
+    }
+
     signal clicked()
     signal middleClicked()
+    signal pressStarted(var anchor)
+    signal pressEnded(var anchor)
+    signal tabDragStarted(var anchor, real sceneX, real sceneY)
+    signal tabDragMoved(var anchor, real sceneX, real sceneY)
+    signal tabDragFinished(var anchor, real sceneX, real sceneY)
+    signal tabDragCanceled(var anchor)
     signal tooltipRequested(var anchor)
     signal tooltipDismissed(var anchor)
 
@@ -50,13 +67,19 @@ Rectangle {
         tooltipDismissed(button);
     }
 
-    onEnabledChanged: { if (!enabled) dismissTooltip(); }
-    onVisibleChanged: { if (!visible) dismissTooltip(); }
+    onEnabledChanged: { if (!enabled) { dismissTooltip(); pointer.cancelTabDrag(); } }
+    onVisibleChanged: { if (!visible) { dismissTooltip(); pointer.cancelTabDrag(); } }
+    onDragEnabledChanged: { if (!dragEnabled) pointer.cancelTabDrag(); }
     onTooltipChanged: {
         if (hovered && enabled && !hoverDelay.running && !down)
             tooltipRequested(button);
     }
-    Component.onDestruction: tooltipDismissed(button)
+    Component.onDestruction: {
+        pressEnded(button);
+        tooltipDismissed(button);
+        if (pointer.draggingTab)
+            tabDragCanceled(button);
+    }
 
     // Match DMS's focused-window icon path. AppIconRenderer's "image:"
     // prefix handling conflicts with Quickshell's image://icon provider URLs.
@@ -108,14 +131,64 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | (button.acceptMiddleClick ? Qt.MiddleButton : Qt.NoButton)
-        cursorShape: Qt.PointingHandCursor
+        // Tab dragging takes priority over Flickable's overflow gesture.
+        preventStealing: button.dragEnabled
+        cursorShape: draggingTab ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+        property bool draggingTab: false
+        property bool draggedTab: false
+        property real pressSceneX: 0
+        property real pressSceneY: 0
+        function cancelTabDrag() {
+            if (draggingTab)
+                button.tabDragCanceled(button);
+            draggingTab = false;
+        }
         onEntered: hoverDelay.restart()
         onExited: button.dismissTooltip()
-        onPressed: button.dismissTooltip()
+        onPressed: mouse => {
+            button.dismissTooltip();
+            draggedTab = false;
+            const pos = mapToItem(null, mouse.x, mouse.y);
+            pressSceneX = pos.x;
+            pressSceneY = pos.y;
+            if (mouse.button === Qt.LeftButton) {
+                button.pressStarted(button);
+                if (button.activateOnPress)
+                    button.clicked();
+            }
+        }
+        onPositionChanged: mouse => {
+            if (!button.dragEnabled || (pressedButtons & Qt.LeftButton) === 0)
+                return;
+            const pos = mapToItem(null, mouse.x, mouse.y);
+            if (!draggingTab && Math.abs(pos.x - pressSceneX) >= Qt.styleHints.startDragDistance) {
+                draggedTab = true;
+                draggingTab = true;
+                button.dismissTooltip();
+                button.tabDragStarted(button, pressSceneX, pressSceneY);
+            }
+            if (draggingTab)
+                button.tabDragMoved(button, pos.x, pos.y);
+        }
+        onReleased: mouse => {
+            if (draggingTab) {
+                const pos = mapToItem(null, mouse.x, mouse.y);
+                draggingTab = false;
+                button.tabDragFinished(button, pos.x, pos.y);
+            }
+            if (mouse.button === Qt.LeftButton)
+                button.pressEnded(button);
+        }
+        onCanceled: {
+            cancelTabDrag();
+            button.pressEnded(button);
+        }
         onClicked: mouse => {
+            if (draggedTab)
+                return;
             if (mouse.button === Qt.MiddleButton)
                 button.middleClicked();
-            else if (mouse.button === Qt.LeftButton)
+            else if (mouse.button === Qt.LeftButton && !button.activateOnPress)
                 button.clicked();
         }
     }
@@ -124,7 +197,7 @@ Rectangle {
         id: hoverDelay
         interval: 500
         onTriggered: {
-            if (button.hovered && button.enabled && button.tooltip.length > 0)
+            if (button.hovered && button.enabled && !button.down && button.tooltip.length > 0)
                 button.tooltipRequested(button);
         }
     }

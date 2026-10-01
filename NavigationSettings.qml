@@ -15,7 +15,7 @@ PluginSettings {
         settingKey: "reverseScroll"
         label: "Reverse scroll direction"
         description: "Invert DMS's scroll direction when navigating Niri columns over this widget."
-        defaultValue: true
+        defaultValue: false
     }
 
     SliderSetting {
