@@ -9,6 +9,7 @@ Rectangle {
 
     property string text: ""
     property string appId: ""
+    property string faviconSource: ""
     property bool showAppIcon: false
     readonly property var desktopEntry: showAppIcon && appId
         ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId)) : null
@@ -18,6 +19,8 @@ Rectangle {
         ? Paths.getAppIcon(appId, desktopEntry) : ""
     readonly property int appIconSize: Math.max(12,
         Math.floor(Math.min(height - 6, width - 8) * 0.85))
+    // Favicons often fill their image bounds more densely than desktop icons.
+    readonly property int faviconSize: Math.max(1, Math.floor(appIconSize * 0.85))
     property bool selected: false
     property bool urgent: false
     property string tooltip: text
@@ -94,7 +97,7 @@ Rectangle {
         IconImage {
             id: appIcon
             anchors.centerIn: parent
-            visible: button.showAppIcon && status === Image.Ready
+            visible: button.showAppIcon && favicon.status !== Image.Ready && status === Image.Ready
             width: button.appIconSize
             height: button.appIconSize
             source: button.iconSource
@@ -103,9 +106,24 @@ Rectangle {
             backer.sourceSize: Qt.size(button.appIconSize * 2, button.appIconSize * 2)
         }
 
+        Image {
+            id: favicon
+            anchors.centerIn: parent
+            // A small optical correction for dense favicon artwork beside text.
+            anchors.verticalCenterOffset: 1
+            visible: button.showAppIcon && status === Image.Ready
+            width: button.faviconSize
+            height: button.faviconSize
+            source: button.showAppIcon ? button.faviconSource : ""
+            sourceSize: Qt.size(button.faviconSize * 2, button.faviconSize * 2)
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            mipmap: true
+        }
+
         DankIcon {
             anchors.centerIn: parent
-            visible: button.showAppIcon && appIcon.status !== Image.Ready
+            visible: button.showAppIcon && favicon.status !== Image.Ready && appIcon.status !== Image.Ready
             name: "window"
             size: button.appIconSize
             color: button.selected ? Theme.primary : Theme.surfaceText

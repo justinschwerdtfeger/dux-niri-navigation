@@ -66,6 +66,7 @@ PluginComponent {
     horizontalBarPill: Component {
         WindowStrip {
             windows: niri.currentWindows
+            faviconSources: niri.faviconSources
             workspaceId: niri.activeWorkspace?.id ?? null
             available: niri.available
             reorderBusy: niri.reorderBusy

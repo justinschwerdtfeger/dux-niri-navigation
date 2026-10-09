@@ -6,6 +6,8 @@ from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 tooling_script = root / "scripts/setup-qml-tooling.py"
 compile(tooling_script.read_text(), str(tooling_script), "exec")
+favicon_script = root / "scripts/tabctl-favicons.py"
+compile(favicon_script.read_text(), str(favicon_script), "exec")
 manifest = json.loads((root / "plugin.json").read_text())
 required = ("id", "name", "description", "version", "author", "type", "component", "settings")
 for key in required:

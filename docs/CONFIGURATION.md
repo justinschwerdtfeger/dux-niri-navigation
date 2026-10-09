@@ -1,5 +1,13 @@
 # Desktop compatibility audit — 2026-09-30
 
+## External Helium links — 2026-10-08
+
+At the user's explicit request, installed `~/.local/bin/helium-new-window` and a hidden `~/.local/share/applications/helium-new-window.desktop` handler. The wrapper executes `env DESKTOPINTEGRATION=1 "$HOME/AppImages/helium.appimage" --new-window "$@"`. Registered this separate desktop entry for HTTP and HTTPS, leaving the AppImage-managed `helium.desktop` intact so its regeneration does not overwrite the wrapper. The inspected launcher reports Helium AppImage 0.18.3.1. This requires the AppImage to remain at that path.
+
+Shell syntax and desktop-entry validation pass; both `xdg-mime` and Gio resolve HTTP/HTTPS to the new handler. No test URL was opened; visible new-window behavior and Discord's portal handoff remain to be confirmed. Browser-internal middle-click and Ctrl+click behavior is unaffected. Multiple URLs passed together can still become multiple tabs in one new window.
+
+Previous association files are backed up at `~/.local/share/helium-new-window-backups/20261008-213622/`. To undo just this change, run `xdg-mime default helium.desktop x-scheme-handler/http` and `xdg-mime default helium.desktop x-scheme-handler/https`; the wrapper and hidden desktop entry can then be removed. This is a user-authorized configuration change, not a routine repository setup step.
+
 The user explicitly authorized edits to DMS settings and `~/.config/niri`. This is a record of that session, not instructions for routine repository work.
 
 ## Verified baseline

@@ -28,6 +28,14 @@ Left-dragging a tab past the platform drag threshold moves its visual under the 
 
 The adapter realizes a drop through adjacent swaps, awaiting reactive focus and layout confirmation for each step. Within one stack it uses window-up/down actions; between columns it first selects the intended neighboring tile, then the dragged tile, and uses Niri’s left/right swap action. Column window counts remain intact while their occupants can change; windows can take the destination column’s dimensions. Pending moves cancel on missing IDs, unexpected order/layout changes, explicit navigation/close, output/workspace changes, socket rejection, or a 1.5-second acknowledgment timeout. Focus staging does not scroll the viewport; the final active window is revealed when the operation finishes. Niri remains the source of ordering truth.
 
+## Browser favicons
+
+Helium window entries use the active browser tab's favicon when TabCtl is available. A shared `state/BrowserFavicons` singleton runs a read-only Python/Gio subscriber to TabCtl's `ListTabsWithIcons` method and `TabsUpdated`/D-Bus owner-change signals. It does not poll tabs, invoke tab actions, or open another Niri connection. `NiriState` combines those snapshots with DMS's existing reactive window state. Favicon bindings update separately from the strip's incremental tab model, preserving geometry, title text, ordering, and delegate identity.
+
+Browser window IDs do not identify Niri windows. Match an active-tab title only when it is unique among both all Helium Niri windows (including other outputs/workspaces and floating windows) and all active Helium tabs across profiles. Strip only the final ` - Helium` window-title suffix. Never choose a duplicate by focus or list order and never persist associations. Unmatched, empty, duplicated, or customized titles fall back to the normal application icon. The initial integration deliberately supports the `helium` app ID only.
+
+QML loads HTTP(S) favicons directly from the browser-provided URL, with normal Qt image caching. A bounded inline image can be decoded into a private temporary file by the bridge; those files disappear when the subscriber exits normally. Browser-internal image URLs are unsupported. Keep the application icon visible until the favicon is ready, and restore it on a missing/error source. No domain-derived guesses or third-party favicon service are used. TabCtl extension 2.3.0 omits favicon-only notifications; perform one extra read two seconds after a tab-change event, rather than continuous polling. Later favicon-only updates still need an upstream notification fix.
+
 ## Workspace rail
 
 Show the output's workspaces in Niri order. Preserve normal dynamic workspace behavior, including the trailing empty workspace. An ordinary empty workspace can remain while active; do not forcibly delete workspaces or equate every empty workspace with an immediately removed one.
@@ -78,6 +86,8 @@ The horizontal DMS pill disables `enableBackgroundHover` and `enableCursor`, mat
 Buttons request tooltips after 500 ms; one shared lazy `DankTooltip` loader in the strip supplies the native background, border, font, transparency, and screen clamping. Exit, press, disabling a button, hiding it, or scrolling dismisses the tooltip. Dismissal checks the owning button so an old button cannot clear a newer tooltip. Hover text is `Application name • Window title`, using DMS `Paths.getAppName` with desktop-entry lookup (falling back to the app ID). Missing application identity leaves just the title. The tab remains title-only. The inspected DMS `StyledText` renders plain text, preserving literal application titles. Native tooltips are single-line and capped at 300 pixels; long titles can elide there too.
 
 Application icons (including the generic application-window fallback) use 85% of their former height/width allowance with a 12-pixel floor. Control glyphs and button dimensions retain their sizes.
+
+Favicons use 85% of the resulting application-icon size, rounded down to whole pixels, and remain horizontally centered in the original icon slot with a one-logical-pixel downward optical adjustment. This balances dense website artwork against desktop icons while preserving title spacing and fallback-icon geometry.
 
 
 ## Wheel navigation

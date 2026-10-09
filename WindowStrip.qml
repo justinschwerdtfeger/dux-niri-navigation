@@ -9,6 +9,7 @@ Item {
     id: strip
 
     property var windows: []
+    property var faviconSources: ({})
     property var workspaceId: null
     property bool available: false
     property bool reorderBusy: false
@@ -424,6 +425,7 @@ Item {
                         id: tabButton
                         anchors.fill: parent
                         appId: tab.appId
+                        faviconSource: strip.faviconSources[tab.windowId] ?? ""
                         showAppIcon: true
                         acceptMiddleClick: true
                         activateOnPress: true

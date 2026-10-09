@@ -2,6 +2,7 @@ import QtQuick
 import qs.Services
 import "WindowModel.js" as WindowModel
 import "WorkspaceModel.js" as WorkspaceModel
+import "BrowserModel.js" as BrowserModel
 import "state" as Session
 
 // Keep access to DMS's internal compositor services in one place.
@@ -18,6 +19,7 @@ QtObject {
     readonly property int workspaceCount: workspaces.length
     readonly property var activeWorkspace: WindowModel.activeWorkspace(workspaces, outputName)
     readonly property var currentWindows: WindowModel.workspaceWindows(windows, activeWorkspace)
+    readonly property var faviconSources: BrowserModel.faviconSources(windows, Session.BrowserFavicons.tabs)
     property var pendingReorder: null
     readonly property bool reorderBusy: pendingReorder !== null
     property Timer reorderTimeout: Timer {

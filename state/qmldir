@@ -1,1 +1,2 @@
 singleton WorkspaceIcons 1.0 WorkspaceIcons.qml
+singleton BrowserFavicons 1.0 BrowserFavicons.qml

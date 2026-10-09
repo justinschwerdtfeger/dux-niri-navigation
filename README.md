@@ -32,7 +32,9 @@ This creates a development symlink, so DMS reads edits directly from this reposi
 
 In DMS Settings → Plugins, scan for plugins, enable **Justin Navigation**, then add it to a **horizontal** DankBar widget list. Start with a mostly empty bar section. **Allow full-width growth** is enabled by default: the strip grows with its window count up to the hosting bar’s available content width, reserving the actual pill padding, other widgets, and gaps. It does not stretch a short list to fill the bar. For crowded bars, disable this option and set a pixel maximum (default 640, range 240–7680). On the inspected DMS 1.6.2 host, the plugin subtracts other widgets in its section and reserves occupied neighboring sections. Empty center containers do not cap growth. A short list still uses only its natural width.
 
-Application icons use 85% of the available icon slot; arrows and plus retain their size. Hover and press highlighting applies to individual buttons. Buttons use the full DMS bar height. In **Settings → DankBar**, select the bar and adjust **Size** to change its height. **Padding** and **Remove Widget Padding** control horizontal padding around this plugin, not its button height. The horizontal pill background and outline also fill the bar height.
+Application icons use 85% of the available icon slot. Favicons use 85% of that application-icon size, horizontally centered in the same slot with a one-pixel downward optical adjustment, to balance their often denser artwork. Arrows and plus retain their size. Hover and press highlighting applies to individual buttons. Buttons use the full DMS bar height. In **Settings → DankBar**, select the bar and adjust **Size** to change its height. **Padding** and **Remove Widget Padding** control horizontal padding around this plugin, not its button height. The horizontal pill background and outline also fill the bar height.
+
+Helium windows can show their active website's favicon instead of the application icon. Install the [TabCtl extension and native messaging helper](https://github.com/slastra/tabctl), register the helper with `tabctl install`, and confirm `tabctl status` reports a connected Helium browser. The plugin subscribes to TabCtl's D-Bus events automatically; it also requires `/usr/bin/python3` with PyGObject/Gio (Fedora: `python3-gobject`). No extra service or extension is needed. Each window still has one entry, showing its active browser tab's favicon. Missing/failed images and ambiguous window titles fall back to the application icon. See [favicon compatibility limits](docs/DEVELOPMENT.md#tabctl-favicons).
 
 For the workspace rail, add **Justin Navigation** to a DMS bar positioned **Left**. The same plugin renders the window strip on horizontal bars and the workspace rail on vertical bars. This repository change does not create or reconfigure desktop bars.
 
@@ -67,6 +69,9 @@ Requires Python 3 and Node.js. This validates packaging, checks the setup script
 | `BarGeometry.qml` | Adapter for DMS bar content bounds and sibling sizing |
 | `NiriState.qml` | Boundary around DMS compositor services |
 | `WindowModel.js` | Pure output filtering and window-ordering logic |
+| `BrowserModel.js` | Conservative active-browser-tab to Niri window matching |
+| `state/BrowserFavicons.qml` | Shared TabCtl event subscriber |
+| `scripts/tabctl-favicons.py` | Read-only D-Bus bridge and inline favicon handling |
 | `WorkspaceModel.js` | Workspace filtering, icon categories, assignment lifecycle, and favorites |
 | `state/WorkspaceIcons.qml` | Shared session-local workspace icons |
 | `WorkspaceRail.qml` | Bounded scrolling workspace navigation |
