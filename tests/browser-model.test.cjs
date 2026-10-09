@@ -16,14 +16,36 @@ test('maps each unique active title to its Niri ID regardless of ordering or foc
         { 1: 'https://example.com/favicon.png', 2: 'https://example.com/favicon.png' });
 });
 
-test('duplicate compositor titles anywhere, including other outputs, fall back', () => {
+test('duplicate compositor titles share an agreed icon across outputs and floating windows', () => {
     assert.deepEqual(match([window(1, 'Same', { workspace_id: 1 }),
-        window(2, 'Same', { workspace_id: 20, is_focused: true })], [tab('Same')]), {});
+        window(2, 'Same', { workspace_id: 20, is_focused: true, is_floating: true })],
+        [tab('Same'), tab('Same', { windowId: 5 })]),
+        { 1: 'https://example.com/favicon.png', 2: 'https://example.com/favicon.png' });
 });
 
-test('duplicate active tab titles across windows or profiles fall back even with identical icons', () => {
+test('duplicate active tab titles across profiles can share identical artwork', () => {
     assert.deepEqual(match([window(1, 'Same')], [tab('Same'),
-        tab('Same', { instance: 'Helium2', windowId: 5 })]), {});
+        tab('Same', { instance: 'Helium2', windowId: 5 })]),
+        { 1: 'https://example.com/favicon.png' });
+});
+
+test('duplicate titles with conflicting or missing icons fall back for every window', () => {
+    const windows = [window(1, 'Same'), window(2, 'Same', { workspace_id: 20 })];
+    for (const iconSource of ['https://example.com/other.png', '', null, undefined]) {
+        const tabs = [tab('Same'), tab('Same', { instance: 'Helium2', iconSource })];
+        assert.deepEqual(match(windows, tabs), {});
+        assert.deepEqual(match(windows.slice().reverse(), tabs.slice().reverse()), {});
+    }
+});
+
+test('shared icons react to disagreement, recovery, and candidate removal without saved identity', () => {
+    const windows = [window(1, 'Same'), window(2, 'Same')];
+    const agreed = { 1: 'https://example.com/favicon.png', 2: 'https://example.com/favicon.png' };
+    assert.deepEqual(match(windows, [tab('Same'), tab('Same')]), agreed);
+    assert.deepEqual(match(windows, [tab('Same'), tab('Same', { iconSource: '' })]), {});
+    assert.deepEqual(match(windows, [tab('Same')]), agreed);
+    assert.deepEqual(match(windows, []), {});
+    assert.deepEqual(match(windows, [tab('Same'), tab('Same')]), agreed);
 });
 
 test('does not match other apps, empty titles, substring titles, or another browser', () => {
@@ -42,7 +64,9 @@ test('title navigation, tab disconnect, and window removal immediately clear old
 });
 
 test('missing icons fall back and title normalization removes only the final suffix', () => {
-    assert.deepEqual(match([window(1, 'One - Helium')], [tab('One - Helium', { iconSource: '' })]), { 1: '' });
+    assert.deepEqual(match([window(1, 'One - Helium')], [tab('One - Helium', { iconSource: '' })]), {});
+    assert.deepEqual(match([window(1, 'One - Helium')], [tab('One - Helium')]),
+        { 1: 'https://example.com/favicon.png' });
     assert.deepEqual(match([window(1, 'One')], [tab('One', { iconSource: null })]), {});
     assert.deepEqual(match(null, null), {});
 });

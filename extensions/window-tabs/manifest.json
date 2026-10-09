@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Justin Window Tabs",
+  "version": "0.1.0",
+  "description": "Move newly created browser tabs into separate windows for Justin Navigation.",
+  "permissions": ["storage"],
+  "incognito": "split",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Justin Window Tabs: click to pause or resume"
+  }
+}

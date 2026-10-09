@@ -10,6 +10,8 @@ Switching workspaces fades and gently slides the new window tabs into place. Whe
 
 ## Intended behavior
 
+For one browser page per window, the optional [Justin Window Tabs extension](extensions/window-tabs/README.md) moves newly created Helium tabs into separate windows. Load `extensions/window-tabs` unpacked from `chrome://extensions`; its toolbar button pauses/resumes detaching. Combine it with Helium's Dynamic layout to hide the tab strip in single-tab windows. Existing tabs are left alone when loading; newly restored tabs can be separated. Live Helium/Niri focus behavior remains to be verified. The external-link wrapper is recorded in [Configuration](docs/CONFIGURATION.md).
+
 - Top bar: windows on the bar's current workspace, in Niri's layout order, with icons and window titles, stable proportional widths, and click-to-focus; floating windows are excluded.
 - Top-bar plus: open the existing DMS app launcher. Let Niri place newly created windows.
 - Left bar: dynamic workspace navigation with small user-selected icons.
@@ -34,7 +36,7 @@ In DMS Settings → Plugins, scan for plugins, enable **Justin Navigation**, the
 
 Application icons use 85% of the available icon slot. Favicons use 85% of that application-icon size, horizontally centered in the same slot with a one-pixel downward optical adjustment, to balance their often denser artwork. Arrows and plus retain their size. Hover and press highlighting applies to individual buttons. Buttons use the full DMS bar height. In **Settings → DankBar**, select the bar and adjust **Size** to change its height. **Padding** and **Remove Widget Padding** control horizontal padding around this plugin, not its button height. The horizontal pill background and outline also fill the bar height.
 
-Helium windows can show their active website's favicon instead of the application icon. Install the [TabCtl extension and native messaging helper](https://github.com/slastra/tabctl), register the helper with `tabctl install`, and confirm `tabctl status` reports a connected Helium browser. The plugin subscribes to TabCtl's D-Bus events automatically; it also requires `/usr/bin/python3` with PyGObject/Gio (Fedora: `python3-gobject`). No extra service or extension is needed. Each window still has one entry, showing its active browser tab's favicon. Missing/failed images and ambiguous window titles fall back to the application icon. See [favicon compatibility limits](docs/DEVELOPMENT.md#tabctl-favicons).
+Helium windows can show their active website's favicon instead of the application icon. Install the [TabCtl extension and native messaging helper](https://github.com/slastra/tabctl), register the helper with `tabctl install`, and confirm `tabctl status` reports a connected Helium browser. The plugin subscribes to TabCtl's D-Bus events automatically; it also requires `/usr/bin/python3` with PyGObject/Gio (Fedora: `python3-gobject`). No extra service or extension is needed. Each window still has one entry, showing its active browser tab's favicon. Windows with the same title can share a favicon when every matching active tab supplies the same nonempty icon source. Missing/failed images or conflicting matches fall back to the application icon. See [favicon compatibility limits](docs/DEVELOPMENT.md#tabctl-favicons).
 
 For the workspace rail, add **Justin Navigation** to a DMS bar positioned **Left**. The same plugin renders the window strip on horizontal bars and the workspace rail on vertical bars. This repository change does not create or reconfigure desktop bars.
 
