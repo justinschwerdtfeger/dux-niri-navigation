@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+    <meta charset="utf-8" />
+    <title>Justin Navigation favicon test</title>
+    <link id="favicon" rel="icon" type="image/png" />
+    <h1>Late favicon test</h1>
+    <p>The icon starts red and turns green after six seconds. The title and URL stay the same.</p>
+    <p>Watch this window's icon in the DMS strip. Both colors should appear.</p>
+    <button id="toggle">Change icon again</button>
+    <p id="status" aria-live="polite"></p>
+    <script>
+        let green = false;
+        function updateIcon() {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 32;
+            const context = canvas.getContext('2d');
+            context.fillStyle = green ? '#00aa44' : '#ee2222';
+            context.fillRect(0, 0, 32, 32);
+            document.getElementById('favicon').href = canvas.toDataURL('image/png');
+            document.getElementById('status').textContent = green
+                ? 'Icon is green.'
+                : 'Icon is red.';
+        }
+        function toggleIcon() {
+            green = !green;
+            updateIcon();
+        }
+        document.getElementById('toggle').addEventListener('click', toggleIcon);
+        updateIcon();
+        setTimeout(toggleIcon, 6000);
+    </script>
+</html>

@@ -4,6 +4,7 @@ import QtQuick
 import qs.Common
 import qs.Widgets
 import "WindowModel.js" as WindowModel
+import "ModelUtils.js" as ModelUtils
 
 Item {
     id: strip
@@ -22,9 +23,12 @@ Item {
     property real barSpacing: 0
     property bool reverseScroll: false
     property var tooltipAnchor: null
+    readonly property DankTooltip activeTooltip: tooltipLoader.item as DankTooltip
     readonly property real gap: Theme.spacingXS
-    readonly property var tabLayout: WindowModel.tabGeometry(windows, gap,
-        Math.max(96, (buttonHeight + 24) * 1.5), referenceWidth, preferredTabWidth)
+    readonly property var tabLayout: {
+        const minimum = Math.max(96, (buttonHeight + 24) * 1.5);
+        return WindowModel.tabGeometry(windows, gap, minimum, referenceWidth, preferredTabWidth);
+    }
     property bool animationReady: false
     property real tabOpacity: 1
     property real tabOffset: 0
@@ -40,78 +44,44 @@ Item {
     }
 
     readonly property real controlWidth: buttonHeight
-    readonly property var stripLayout: WindowModel.stripGeometry(
-        animatedContentWidth, maximumWidth, controlWidth, gap)
+    readonly property var stripLayout: WindowModel.stripGeometry(animatedContentWidth, maximumWidth, controlWidth, gap)
     // During growth, compare against the same animated demand used to size
     // the strip; the final tab width would briefly look like overflow.
     // On removal, use the smaller live content width immediately.
     // The host may still assign less width than our implicit request.
-    readonly property bool showArrows: WindowModel.stripGeometry(
-        Math.min(animatedContentWidth, tabLayout.totalWidth),
-        width, controlWidth, gap).showArrows
+    readonly property bool showArrows: {
+        const demand = Math.min(animatedContentWidth, tabLayout.totalWidth);
+        return WindowModel.stripGeometry(demand, width, controlWidth, gap).showArrows;
+    }
     readonly property int activeIndex: windows.findIndex(window => window.active)
     readonly property var activeWindowId: activeIndex >= 0 ? windows[activeIndex].id : null
     // Manual browsing lasts until focus changes, even as DMS replaces snapshots.
     property bool followActive: true
 
-    ListModel { id: tabs }
-
-    Transition {
-        id: tabMove
-        NumberAnimation {
-            properties: "x,y"
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
-        }
-        // A reorder can interrupt an entrance; finish its opacity as well.
-        NumberAnimation {
-            property: "opacity"
-            to: 1
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
-        }
-    }
-
-    Transition {
-        id: tabAdd
-        NumberAnimation {
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
-        }
+    ListModel {
+        id: tabs
     }
 
     function syncTabs() {
-        const previousIds = [];
-        for (let i = 0; i < tabs.count; i++)
-            previousIds.push(tabs.get(i).windowId);
         const data = windows.map((window, index) => ({
-            windowId: window.id, appId: window.appId, title: window.title,
-            active: !!window.active, urgent: !!window.urgent,
+            windowId: window.id,
+            appId: window.appId,
+            title: window.title,
+            active: !!window.active,
+            urgent: !!window.urgent,
             tabWidth: tabLayout.widths[index]
         }));
-        const changes = WindowModel.tabModelChanges(previousIds, windows.map(window => window.id));
-        if (changes.length)
+        if (ModelUtils.syncRows(tabs, data, "windowId"))
             hideTooltip(null);
-        for (const change of changes) {
-            if (change.type === "remove")
-                tabs.remove(change.index);
-            else if (change.type === "insert")
-                tabs.insert(change.index, data[change.index]);
-            else
-                tabs.move(change.from, change.index, 1);
-        }
-        data.forEach((window, index) => tabs.set(index, window));
     }
 
     onWindowsChanged: {
-        if (dragWindowId !== null && (windows.length !== dragIds.length
-                || windows.some((window, index) => window.id !== dragIds[index])))
+        if (dragWindowId !== null && (windows.length !== dragIds.length || windows.some((window, index) => window.id
+                                                                                                           !== dragIds[index])))
             cancelTabDrag();
-        if (droppedPreview && (!windows.some(window => window.id === droppedPreview.sourceId)
-                || !windows.some(window => window.id === droppedPreview.target.targetId)))
+        if (droppedPreview && (!windows.some(window => window.id === droppedPreview.sourceId) || !windows.some(window
+                                                                                                               => window.id
+                                                                                                                  === droppedPreview.target.targetId)))
             droppedPreview = null;
         Qt.callLater(syncTabs);
     }
@@ -125,9 +95,10 @@ Item {
     property var dragTarget: null
     property var pressedTabAnchor: null
     property var droppedPreview: null
-    readonly property var dragPreviewOffsets: WindowModel.tabDragOffsets(
-        windows, tabLayout, dragWindowId ?? droppedPreview?.sourceId ?? null,
-        dragTarget ?? droppedPreview?.target ?? null, gap)
+    readonly property var tabVisualPositions: WindowModel.tabVisualPositions(windows, tabLayout, dragWindowId
+                                                                             ?? droppedPreview?.sourceId ?? null,
+                                                                             dragTarget ?? droppedPreview?.target
+                                                                             ?? null, gap)
 
     function endTabPress(anchor) {
         if (pressedTabAnchor !== anchor)
@@ -158,8 +129,8 @@ Item {
     }
 
     function updateDragTarget() {
-        dragTarget = WindowModel.tabDropTarget(windows, tabLayout, dragWindowId,
-            dragPointerX - dragGrabOffset + viewport.contentX);
+        dragTarget = WindowModel.tabDropTarget(windows, tabLayout, dragWindowId, dragPointerX - dragGrabOffset
+                                               + viewport.contentX);
     }
 
     function moveTabDrag(anchor, sceneX, sceneY) {
@@ -177,10 +148,13 @@ Item {
         moveTabDrag(anchor, sceneX, sceneY);
         const sourceId = dragWindowId;
         const target = dragTarget;
-        const inside = dragPointerX >= 0 && dragPointerX <= viewport.width
-            && dragPointerY >= 0 && dragPointerY <= buttonHeight;
+        const insideX = dragPointerX >= 0 && dragPointerX <= viewport.width;
+        const inside = insideX && dragPointerY >= 0 && dragPointerY <= buttonHeight;
         // Keep the gap in place while Niri confirms the actual reorder.
-        droppedPreview = inside && target ? { sourceId: sourceId, target: target } : null;
+        droppedPreview = inside && target ? {
+                                                sourceId: sourceId,
+                                                target: target
+                                            } : null;
         cancelTabDrag();
         if (inside && target)
             windowReorderRequested(sourceId, target.targetId, target.after);
@@ -195,17 +169,21 @@ Item {
         onTriggered: {
             if (strip.dragPointerY < 0 || strip.dragPointerY > strip.buttonHeight)
                 return;
-            const step = strip.dragPointerX < 28 ? -8
-                : strip.dragPointerX > viewport.width - 28 ? 8 : 0;
+            const step = strip.dragPointerX < 28 ? -8 : strip.dragPointerX > viewport.width - 28 ? 8 : 0;
             if (!step)
                 return;
-            viewport.contentX = WindowModel.scrollPosition(strip.tabLayout, -1,
-                viewport.contentX + step, viewport.width, false);
+            viewport.contentX = WindowModel.scrollPosition(strip.tabLayout, -1, viewport.contentX + step, viewport.width,
+                                                           false);
             strip.updateDragTarget();
         }
     }
 
-    onAvailableChanged: { if (!available) { cancelTabDrag(); droppedPreview = null; } }
+    onAvailableChanged: {
+        if (!available) {
+            cancelTabDrag();
+            droppedPreview = null;
+        }
+    }
     onReorderBusyChanged: {
         if (reorderBusy)
             cancelTabDrag();
@@ -221,8 +199,7 @@ Item {
         tabOpacity = 1;
         tabOffset = 0;
         hideTooltip(null);
-        if (!animationReady || !available || workspaceId === null
-                || !windows.length || Theme.snapListModelChanges)
+        if (!animationReady || !available || workspaceId === null || !windows.length || Theme.snapListModelChanges)
             return;
         // The live model changes immediately; never delay focus or queue switches.
         tabOpacity = 0;
@@ -258,12 +235,20 @@ Item {
     signal windowActivated(var windowId)
     signal windowCloseRequested(var windowId)
     signal windowReorderRequested(var windowId, var targetId, bool after)
-    signal launcherRequested()
+    signal launcherRequested
     signal columnScrollRequested(int direction)
-    property var wheelState: ({ axis: "", source: "", value: 0 })
+    property var wheelState: ({
+                                  axis: "",
+                                  source: "",
+                                  value: 0
+                              })
 
     onReverseScrollChanged: {
-        wheelState = { axis: "", source: "", value: 0 };
+        wheelState = {
+            axis: "",
+            source: "",
+            value: 0
+        };
     }
 
     function handleWheel(wheel) {
@@ -276,10 +261,9 @@ Item {
         if (dragWindowId !== null)
             return;
         hideTooltip(null);
-        wheelState = WindowModel.wheelNavigation(wheelState,
-            wheel.angleDelta.x, wheel.angleDelta.y,
-            wheel.pixelDelta?.x ?? 0, wheel.pixelDelta?.y ?? 0,
-            SettingsData.reverseScrolling, reverseScroll);
+        wheelState = WindowModel.wheelNavigation(wheelState, wheel.angleDelta.x, wheel.angleDelta.y, wheel.pixelDelta?.x ?? 0,
+                                                 wheel.pixelDelta?.y ?? 0, SettingsData.reverseScrolling,
+                                                 reverseScroll);
         for (let step = 0; step < wheelState.steps; step++)
             columnScrollRequested(wheelState.direction);
     }
@@ -298,28 +282,27 @@ Item {
     clip: true
 
     function showTooltip(anchor) {
-        if (!parentScreen || viewport.moving || !anchor.hovered
-                || dragWindowId !== null || workspaceEnter.running || !anchor.enabled || !anchor.tooltip.length)
+        if (!parentScreen || viewport.moving || !anchor.hovered || dragWindowId !== null || workspaceEnter.running ||
+                !anchor.enabled || !anchor.tooltip.length)
             return;
         tooltipAnchor = anchor;
         tooltipLoader.active = true;
-        if (!tooltipLoader.item)
+        if (!activeTooltip)
             return;
         // Use the same screen-local anchor and panel tooltip as DMS RunningApps.
         const pos = anchor.mapToItem(null, anchor.width / 2, anchor.height);
-        tooltipLoader.item.text = anchor.tooltip;
-        const tooltipY = barEdge === "bottom"
-            ? parentScreen.height - buttonHeight - barSpacing - gap - tooltipLoader.item.implicitHeight
-            : buttonHeight + barSpacing + gap;
-        tooltipLoader.item.show(anchor.tooltip, pos.x, tooltipY, parentScreen, false, false);
+        activeTooltip.text = anchor.tooltip;
+        const tooltipY = barEdge === "bottom" ? parentScreen.height - buttonHeight - barSpacing - gap
+                                                - activeTooltip.implicitHeight : buttonHeight + barSpacing + gap;
+        activeTooltip.show(anchor.tooltip, pos.x, tooltipY, parentScreen, false, false);
     }
 
     function hideTooltip(anchor) {
         if (anchor && anchor !== tooltipAnchor)
             return;
         tooltipAnchor = null;
-        if (tooltipLoader.item)
-            tooltipLoader.item.hide();
+        if (activeTooltip)
+            activeTooltip.hide();
         tooltipLoader.active = false;
     }
 
@@ -329,20 +312,30 @@ Item {
         sourceComponent: DankTooltip {}
     }
 
-    onVisibleChanged: { if (!visible) { hideTooltip(null); cancelTabDrag(); droppedPreview = null; } }
+    onVisibleChanged: {
+        if (!visible) {
+            hideTooltip(null);
+            cancelTabDrag();
+            droppedPreview = null;
+        }
+    }
     onParentScreenChanged: {
         cancelTabDrag();
         droppedPreview = null;
         hideTooltip(null);
-        wheelState = { axis: "", source: "", value: 0 };
+        wheelState = {
+            axis: "",
+            source: "",
+            value: 0
+        };
     }
 
     function scrollBy(amount) {
         hideTooltip(null);
         followActive = false;
         viewport.cancelFlick();
-        viewport.contentX = WindowModel.scrollPosition(tabLayout, activeIndex,
-            viewport.contentX + amount, viewport.width, false);
+        viewport.contentX = WindowModel.scrollPosition(tabLayout, activeIndex, viewport.contentX + amount, viewport.width,
+                                                       false);
     }
 
     function revealActive() {
@@ -351,9 +344,8 @@ Item {
         // A new rightmost tab can be temporarily clipped while the strip
         // grows. Revealing it now would scroll existing tabs and then undo
         // that scroll on every frame. Clamp now, reveal when growth settles.
-        viewport.contentX = WindowModel.scrollPosition(tabLayout, activeIndex,
-            viewport.contentX, viewport.width,
-            followActive && animatedContentWidth >= tabLayout.totalWidth);
+        viewport.contentX = WindowModel.scrollPosition(tabLayout, activeIndex, viewport.contentX, viewport.width,
+                                                       followActive && animatedContentWidth >= tabLayout.totalWidth);
     }
 
     onActiveWindowIdChanged: {
@@ -369,7 +361,6 @@ Item {
     Component.onCompleted: {
         syncTabs();
         animationReady = true;
-        console.info("Justin Navigation: tab dragging, workspace transitions and tab movement loaded; wheel input has no cooldown, 120 angle units per step");
         Qt.callLater(revealActive);
     }
 
@@ -400,10 +391,9 @@ Item {
 
         Row {
             spacing: strip.gap
-            transform: Translate { y: strip.tabOffset }
-
-            move: strip.animationReady && !Theme.snapListModelChanges ? tabMove : null
-            add: strip.animationReady && !Theme.snapListModelChanges ? tabAdd : null
+            transform: Translate {
+                y: strip.tabOffset
+            }
 
             Repeater {
                 model: tabs
@@ -419,7 +409,31 @@ Item {
                     required property int index
                     width: tabWidth
                     height: strip.buttonHeight
-                    z: strip.dragWindowId === windowId ? 1 : 0
+                    z: strip.dragWindowId === windowId || strip.droppedPreview?.sourceId === windowId ? 1 : 0
+                    // Animate one absolute position per tab. Animating Row.x and
+                    // a preview offset separately caused jumps on layout acknowledgment.
+                    property real visualX: strip.dragWindowId === windowId ? strip.dragPointerX - strip.dragGrabOffset
+                                                                             + viewport.contentX : (
+                                                                                 strip.tabVisualPositions[windowId]
+                                                                                 ?? x)
+                    property real entranceOpacity: 0
+                    opacity: entranceOpacity
+                    Component.onCompleted: entranceOpacity = 1
+                    Behavior on visualX {
+                        enabled: strip.animationReady && !Theme.snapListModelChanges && strip.dragWindowId
+                                 !== tab.windowId
+                        NumberAnimation {
+                            duration: Theme.shortDuration
+                            easing.type: Theme.standardEasing
+                        }
+                    }
+                    Behavior on entranceOpacity {
+                        enabled: strip.animationReady && !Theme.snapListModelChanges
+                        NumberAnimation {
+                            duration: Theme.shortDuration
+                            easing.type: Theme.standardEasing
+                        }
+                    }
 
                     NavigationButton {
                         id: tabButton
@@ -429,42 +443,35 @@ Item {
                         showAppIcon: true
                         acceptMiddleClick: true
                         activateOnPress: true
-                        opaqueBackground: strip.pressedTabAnchor === tabButton
-                            || strip.dragWindowId === tab.windowId
+                        opaqueBackground: strip.pressedTabAnchor === tabButton || strip.dragWindowId === tab.windowId
+                                          || strip.droppedPreview?.sourceId === tab.windowId
                         dragEnabled: strip.available && !strip.reorderBusy
                         transform: Translate {
-                            x: strip.dragWindowId === tab.windowId
-                                ? strip.dragPointerX - strip.dragGrabOffset - tab.x + viewport.contentX
-                                : (strip.dragPreviewOffsets[tab.index] ?? 0)
-                            Behavior on x {
-                                enabled: strip.animationReady && !Theme.snapListModelChanges
-                                    && strip.dragWindowId !== tab.windowId
-                                NumberAnimation {
-                                    duration: Theme.shortDuration
-                                    easing.type: Theme.standardEasing
-                                }
-                            }
+                            x: tab.visualX - tab.x
                         }
                         text: tab.title
                         selected: tab.active
                         urgent: tab.urgent
-                        tooltip: applicationName
-                            ? applicationName + " • " + tab.title : tab.title
+                        tooltip: applicationName ? applicationName + " • " + tab.title : tab.title
                         onTooltipRequested: anchor => strip.showTooltip(anchor)
                         onTooltipDismissed: anchor => strip.hideTooltip(anchor)
                         onClicked: strip.windowActivated(tab.windowId)
-                        onPressStarted: anchor => { strip.pressedTabAnchor = anchor; }
+                        onPressStarted: anchor => {
+                            strip.pressedTabAnchor = anchor;
+                        }
                         onPressEnded: anchor => strip.endTabPress(anchor)
                         onMiddleClicked: strip.windowCloseRequested(tab.windowId)
                         onTabDragStarted: (anchor, x, y) => strip.startTabDrag(anchor, tab.windowId, x, y)
                         onTabDragMoved: (anchor, x, y) => strip.moveTabDrag(anchor, x, y)
                         onTabDragFinished: (anchor, x, y) => strip.finishTabDrag(anchor, x, y)
-                        onTabDragCanceled: anchor => { if (strip.dragAnchor === anchor) strip.cancelTabDrag(); }
+                        onTabDragCanceled: anchor => {
+                            if (strip.dragAnchor === anchor)
+                                strip.cancelTabDrag();
+                        }
                     }
                 }
             }
         }
-
     }
 
     Row {

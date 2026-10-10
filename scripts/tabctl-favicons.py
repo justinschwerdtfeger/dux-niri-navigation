@@ -9,11 +9,11 @@ import base64
 import binascii
 import hashlib
 import json
-from pathlib import Path
 import re
 import signal
 import sys
 import tempfile
+from pathlib import Path
 from urllib.parse import unquote_to_bytes, urlsplit
 
 PREFIX = "dev.slastra.TabCtl."
@@ -34,9 +34,15 @@ def icon_source(value, directory):
             return ""
         header, payload = value.split(",", 1)
         mime = header[5:].split(";", 1)[0]
-        extensions = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif",
-                      "image/webp": ".webp", "image/svg+xml": ".svg",
-                      "image/x-icon": ".ico", "image/vnd.microsoft.icon": ".ico"}
+        extensions = {
+            "image/png": ".png",
+            "image/jpeg": ".jpg",
+            "image/gif": ".gif",
+            "image/webp": ".webp",
+            "image/svg+xml": ".svg",
+            "image/x-icon": ".ico",
+            "image/vnd.microsoft.icon": ".ico",
+        }
         if mime not in extensions:
             return ""
         encoded = unquote_to_bytes(payload)
@@ -58,9 +64,16 @@ def active_tabs(instance, rows, directory):
         if len(row) != 8 or row[5] is not True:
             continue
         window_id, tab_id, title, _url, _index, _active, _pinned, favicon = row
-        tabs.append({"browser": "Helium", "instance": instance,
-                     "windowId": window_id, "tabId": tab_id, "title": title,
-                     "iconSource": icon_source(favicon, directory)})
+        tabs.append(
+            {
+                "browser": "Helium",
+                "instance": instance,
+                "windowId": window_id,
+                "tabId": tab_id,
+                "title": title,
+                "iconSource": icon_source(favicon, directory),
+            }
+        )
     return tabs
 
 
@@ -71,21 +84,47 @@ class Subscriber:
         self.last_snapshot = None
         self.bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
         self.bus.connect("closed", self.closed)
-        self.bus.signal_subscribe("org.freedesktop.DBus", "org.freedesktop.DBus",
-                                  "NameOwnerChanged", "/org/freedesktop/DBus", None,
-                                  Gio.DBusSignalFlags.NONE, self.owner_changed)
-        self.bus.signal_subscribe(None, INTERFACE, "TabsUpdated", None, None,
-                                  Gio.DBusSignalFlags.NONE, self.tabs_updated)
-        names = self.bus.call_sync("org.freedesktop.DBus", "/org/freedesktop/DBus",
-                                   "org.freedesktop.DBus", "ListNames", None,
-                                   GLib.VariantType.new("(as)"), Gio.DBusCallFlags.NONE,
-                                   3000, None).unpack()[0]
+        self.bus.signal_subscribe(
+            "org.freedesktop.DBus",
+            "org.freedesktop.DBus",
+            "NameOwnerChanged",
+            "/org/freedesktop/DBus",
+            None,
+            Gio.DBusSignalFlags.NONE,
+            self.owner_changed,
+        )
+        self.bus.signal_subscribe(
+            None, INTERFACE, "TabsUpdated", None, None, Gio.DBusSignalFlags.NONE, self.tabs_updated
+        )
+        names = self.bus.call_sync(
+            "org.freedesktop.DBus",
+            "/org/freedesktop/DBus",
+            "org.freedesktop.DBus",
+            "ListNames",
+            None,
+            GLib.VariantType.new("(as)"),
+            Gio.DBusCallFlags.NONE,
+            3000,
+            None,
+        ).unpack()[0]
         for name in names:
             if SERVICE.fullmatch(name):
-                owner = self.bus.call_sync("org.freedesktop.DBus", "/org/freedesktop/DBus",
-                                           "org.freedesktop.DBus", "GetNameOwner",
-                                           GLib.Variant("(s)", (name,)), None,
-                                           Gio.DBusCallFlags.NONE, 3000, None).unpack()[0]
+                try:
+                    owner = self.bus.call_sync(
+                        "org.freedesktop.DBus",
+                        "/org/freedesktop/DBus",
+                        "org.freedesktop.DBus",
+                        "GetNameOwner",
+                        GLib.Variant("(s)", (name,)),
+                        None,
+                        Gio.DBusCallFlags.NONE,
+                        3000,
+                        None,
+                    ).unpack()[0]
+                except GLib.Error:
+                    # A profile can disappear between ListNames and GetNameOwner.
+                    # Keep subscribing to the other profiles and future owners.
+                    continue
                 self.add(name, owner)
         self.emit()
 
@@ -99,6 +138,12 @@ class Subscriber:
         if snapshot != self.last_snapshot:
             print(snapshot, flush=True)
             self.last_snapshot = snapshot
+            # Inline files otherwise accumulate for the entire shell session.
+            # Only delete our own files once no profile references their URI.
+            live_sources = {tab["iconSource"] for tab in tabs}
+            for path in Path(self.directory).iterdir():
+                if path.as_uri() not in live_sources:
+                    path.unlink(missing_ok=True)
 
     def add(self, name, owner):
         self.remove(name)
@@ -124,7 +169,10 @@ class Subscriber:
 
     def tabs_updated(self, _bus, sender, path, _iface, _signal, _parameters):
         for name, state in list(self.services.items()):
-            if sender == state["owner"] and path == "/dev/slastra/TabCtl/Browser/" + name[len(PREFIX):]:
+            if (
+                sender == state["owner"]
+                and path == "/dev/slastra/TabCtl/Browser/" + name[len(PREFIX) :]
+            ):
                 self.refresh(name, state)
                 self.delayed_refresh(name, state)
 
@@ -148,7 +196,7 @@ class Subscriber:
             state["again"] = True
             return
         state["busy"] = True
-        instance = name[len(PREFIX):]
+        instance = name[len(PREFIX) :]
 
         def finished(bus, result):
             if self.services.get(name) is not state:
@@ -165,16 +213,26 @@ class Subscriber:
                 state["again"] = False
                 self.refresh(name, state)
 
-        self.bus.call(state["owner"], "/dev/slastra/TabCtl/Browser/" + instance,
-                      INTERFACE, "ListTabsWithIcons", None,
-                      self.GLib.VariantType.new("(a(iissibbs))"),
-                      self.Gio.DBusCallFlags.NONE, 3000, None, finished)
+        self.bus.call(
+            state["owner"],
+            "/dev/slastra/TabCtl/Browser/" + instance,
+            INTERFACE,
+            "ListTabsWithIcons",
+            None,
+            self.GLib.VariantType.new("(a(iissibbs))"),
+            self.Gio.DBusCallFlags.NONE,
+            3000,
+            None,
+            finished,
+        )
 
 
 def main():
     from gi.repository import Gio, GLib
+
     try:
         from gi.repository import GLibUnix
+
         signal_add = GLibUnix.signal_add
     except ImportError:
         signal_add = GLib.unix_signal_add

@@ -11,14 +11,11 @@ Rectangle {
     property string appId: ""
     property string faviconSource: ""
     property bool showAppIcon: false
-    readonly property var desktopEntry: showAppIcon && appId
-        ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId)) : null
-    readonly property string applicationName: showAppIcon && appId
-        ? Paths.getAppName(appId, desktopEntry) : ""
-    readonly property string iconSource: showAppIcon
-        ? Paths.getAppIcon(appId, desktopEntry) : ""
-    readonly property int appIconSize: Math.max(12,
-        Math.floor(Math.min(height - 6, width - 8) * 0.85))
+    readonly property var desktopEntry: showAppIcon && appId ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId)) :
+                                                               null
+    readonly property string applicationName: showAppIcon && appId ? Paths.getAppName(appId, desktopEntry) : ""
+    readonly property string iconSource: showAppIcon ? Paths.getAppIcon(appId, desktopEntry) : ""
+    readonly property int appIconSize: Math.max(12, Math.floor(Math.min(height - 6, width - 8) * 0.85))
     // Favicons often fill their image bounds more densely than desktop icons.
     readonly property int faviconSize: Math.max(1, Math.floor(appIconSize * 0.85))
     property bool selected: false
@@ -28,13 +25,15 @@ Rectangle {
     property bool dragEnabled: false
     property bool activateOnPress: false
     property bool opaqueBackground: false
-    readonly property color highlightColor: selected || hovered
-        ? Theme.withAlpha(Theme.primary, down ? 0.25 : 0.12) : "transparent"
+    readonly property color highlightColor: selected || hovered ? Theme.withAlpha(Theme.primary, down ? 0.25 : 0.12) :
+                                                                  "transparent"
 
     readonly property bool hovered: pointer.containsMouse
     readonly property bool down: pointer.pressed
+    activeFocusOnTab: enabled
     Accessible.name: tooltip
     Accessible.role: Accessible.Button
+    Accessible.focusable: true
     Accessible.onPressAction: {
         if (button.enabled) {
             button.dismissTooltip();
@@ -42,10 +41,28 @@ Rectangle {
         }
     }
     opacity: enabled ? 1 : 0.4
+    Keys.onPressed: event => {
+        if (button.enabled && [Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space].includes(event.key)) {
+            button.dismissTooltip();
+            button.clicked();
+            event.accepted = true;
+        }
+    }
     radius: Math.min(Theme.cornerRadius, height / 2)
     color: opaqueBackground ? Theme.withAlpha(Theme.surfaceContainerHigh, 1) : highlightColor
     border.width: urgent ? 1 : 0
     border.color: Theme.primary
+
+    // Keep focus feedback inside the clipped bar, using DMS theme colors.
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: 2
+        radius: Math.max(0, button.radius - 2)
+        color: "transparent"
+        border.width: 2
+        border.color: Theme.primary
+        visible: button.activeFocus
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -54,8 +71,8 @@ Rectangle {
         color: button.highlightColor
     }
 
-    signal clicked()
-    signal middleClicked()
+    signal clicked
+    signal middleClicked
     signal pressStarted(var anchor)
     signal pressEnded(var anchor)
     signal tabDragStarted(var anchor, real sceneX, real sceneY)
@@ -70,9 +87,22 @@ Rectangle {
         tooltipDismissed(button);
     }
 
-    onEnabledChanged: { if (!enabled) { dismissTooltip(); pointer.cancelTabDrag(); } }
-    onVisibleChanged: { if (!visible) { dismissTooltip(); pointer.cancelTabDrag(); } }
-    onDragEnabledChanged: { if (!dragEnabled) pointer.cancelTabDrag(); }
+    onEnabledChanged: {
+        if (!enabled) {
+            dismissTooltip();
+            pointer.cancelTabDrag();
+        }
+    }
+    onVisibleChanged: {
+        if (!visible) {
+            dismissTooltip();
+            pointer.cancelTabDrag();
+        }
+    }
+    onDragEnabledChanged: {
+        if (!dragEnabled)
+            pointer.cancelTabDrag();
+    }
     onTooltipChanged: {
         if (hovered && enabled && !hoverDelay.running && !down)
             tooltipRequested(button);
@@ -179,7 +209,11 @@ Rectangle {
             if (!button.dragEnabled || (pressedButtons & Qt.LeftButton) === 0)
                 return;
             const pos = mapToItem(null, mouse.x, mouse.y);
-            if (!draggingTab && Math.abs(pos.x - pressSceneX) >= Qt.styleHints.startDragDistance) {
+            // Qt 6.11 exposes styleHints as QObject in tooling, without its properties.
+            // qmllint disable missing-property
+            const threshold = Qt.styleHints.startDragDistance;
+            // qmllint enable missing-property
+            if (!draggingTab && Math.abs(pos.x - pressSceneX) >= threshold) {
                 draggedTab = true;
                 draggingTab = true;
                 button.dismissTooltip();

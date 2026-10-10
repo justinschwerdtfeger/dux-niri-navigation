@@ -3,13 +3,14 @@
 import contextlib
 import importlib.util
 import io
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location(
-    "qml_tooling", Path(__file__).resolve().parents[1] / "scripts/setup-qml-tooling.py")
+    "qml_tooling", Path(__file__).resolve().parents[1] / "scripts/setup-qml-tooling.py"
+)
 tooling = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(tooling)
 
@@ -22,9 +23,15 @@ class ToolingTests(unittest.TestCase):
         self.root = base / "repo"
         self.source = base / "dms"
         self.root.mkdir()
-        for name in ("shell.qml", "Common/Theme.qml", "Widgets/StyledText.qml",
-                     "Services/NiriService.qml", "Modules/Plugins/PluginComponent.qml",
-                     "DankCommon/Common/Style.qml", "DankCommon/Widgets/StyledText.qml"):
+        for name in (
+            "shell.qml",
+            "Common/Theme.qml",
+            "Widgets/StyledText.qml",
+            "Services/NiriService.qml",
+            "Modules/Plugins/PluginComponent.qml",
+            "DankCommon/Common/Style.qml",
+            "DankCommon/Widgets/StyledText.qml",
+        ):
             path = self.source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("original DMS source\n")
@@ -48,20 +55,29 @@ class ToolingTests(unittest.TestCase):
         self.assertNotIn("original DMS source", (snapshot / "shell.qml").read_text())
         self.assertEqual(env["QT_QPA_PLATFORM"], "offscreen")
         generated = Path(env["XDG_RUNTIME_DIR"]) / "vfs"
-        for module in ("Common", "Widgets", "Services", "Modules/Plugins",
-                       "DankCommon/Common", "DankCommon/Widgets"):
+        for module in (
+            "Common",
+            "Widgets",
+            "Services",
+            "Modules/Plugins",
+            "DankCommon/Common",
+            "DankCommon/Widgets",
+        ):
             directory = generated / "qs" / module
             directory.mkdir(parents=True)
             (directory / "qmldir").write_text(f"module qs.{module.replace('/', '.')}\n")
         (generated / "qs/Common/Theme.qml").symlink_to(snapshot / "Common/Theme.qml")
         (snapshot / ".qmlls.ini").write_text(
-            f'[General]\nbuildDir="{generated}"\nimportPaths="/qt/qml"\n')
+            f'[General]\nbuildDir="{generated}"\nimportPaths="/qt/qml"\n'
+        )
         return tooling.subprocess.CompletedProcess(command, 0, "", "")
 
     def run_setup(self, source=None, scanner=None):
-        with patch.object(tooling.shutil, "which", return_value="/fake/qs"), \
-                patch.object(tooling.subprocess, "run", side_effect=scanner or self.scanner), \
-                contextlib.redirect_stdout(io.StringIO()):
+        with (
+            patch.object(tooling.shutil, "which", return_value="/fake/qs"),
+            patch.object(tooling.subprocess, "run", side_effect=scanner or self.scanner),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
             tooling.setup(self.root, source or self.source)
 
     def assert_preserved(self):
@@ -78,16 +94,19 @@ class ToolingTests(unittest.TestCase):
         theme = self.local / "imports/qs/Common/Theme.qml"
         self.assertFalse(theme.is_symlink())
         self.assertEqual(theme.read_text(), "original DMS source\n")
-        self.assertEqual((self.local / "imports/qs/Common/QmlUtils.js").read_text(),
-                         "function helper() {}\n")
+        self.assertEqual(
+            (self.local / "imports/qs/Common/QmlUtils.js").read_text(), "function helper() {}\n"
+        )
         self.assertEqual((self.local / "imports/qs/assets/icon.svg").read_text(), "<svg/>\n")
         self.assertFalse((self.local / "imports/qs/.qmlls.ini").exists())
         config = tooling.configparser.ConfigParser()
         config.read(self.root / ".qmlls.ini")
         self.assertEqual(config["General"]["buildDir"].strip('"'), str(self.local / "imports"))
         self.assertEqual((self.source / "shell.qml").read_text(), original)
-        self.assertEqual((self.root / ".vscode/settings.json").read_text(),
-                         '// existing JSONC\n{"custom": true}\n')
+        self.assertEqual(
+            (self.root / ".vscode/settings.json").read_text(),
+            '// existing JSONC\n{"custom": true}\n',
+        )
         self.assertFalse(list(self.local.glob(".build-*")))
 
     def test_new_editor_settings_are_valid_json(self):
@@ -127,10 +146,12 @@ class ToolingTests(unittest.TestCase):
             tooling.subprocess.TimeoutExpired(["qs"], 30),
         )
         for result in failures:
-            def fail(*args, **kwargs):
+
+            def fail(*args, result=result, **kwargs):
                 if isinstance(result, Exception):
                     raise result
                 return result
+
             with self.subTest(result=result), self.assertRaises(ValueError):
                 self.run_setup(scanner=fail)
             self.assert_preserved()

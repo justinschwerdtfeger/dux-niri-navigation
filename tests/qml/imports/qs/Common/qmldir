@@ -1,0 +1,4 @@
+module qs.Common
+singleton Paths 1.0 Paths.qml
+singleton SettingsData 1.0 SettingsData.qml
+singleton Theme 1.0 Theme.qml

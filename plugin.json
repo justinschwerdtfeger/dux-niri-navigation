@@ -5,14 +5,9 @@
   "version": "0.5.0",
   "author": "Justin",
   "type": "widget",
-  "capabilities": [
-    "dankbar-widget"
-  ],
+  "capabilities": ["dankbar-widget"],
   "component": "./NavigationWidget.qml",
   "settings": "./NavigationSettings.qml",
   "icon": "view_sidebar",
-  "permissions": [
-    "settings_read",
-    "settings_write"
-  ]
+  "permissions": ["settings_read", "settings_write"]
 }

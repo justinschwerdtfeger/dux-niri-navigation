@@ -37,13 +37,15 @@ Column {
         height: Math.min(88, Math.ceil(menu.pinnedIcons.length / Math.max(1, Math.floor(width / 44))) * 44)
         visible: menu.pinnedIcons.length > 0
         clip: true
-        cellWidth: 44; cellHeight: 44
+        cellWidth: 44
+        cellHeight: 44
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: DankScrollbar {}
         model: menu.pinnedIcons
         delegate: WorkspaceButton {
             required property string modelData
-            width: 36; height: 36
+            width: 36
+            height: 36
             iconName: modelData
             label: modelData.replace(/_/g, " ")
             selected: menu.currentIcon === modelData
@@ -60,13 +62,15 @@ Column {
         width: menu.width
         height: 264
         clip: true
-        cellWidth: 44; cellHeight: 44
+        cellWidth: 44
+        cellHeight: 44
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: DankScrollbar {}
         model: WorkspaceModel.icons.filter(icon => icon.replace(/_/g, " ").includes(search.text.toLowerCase().trim()))
         delegate: WorkspaceButton {
             required property string modelData
-            width: 40; height: 40
+            width: 40
+            height: 40
             iconName: modelData
             label: modelData.replace(/_/g, " ")
             selected: menu.currentIcon === modelData

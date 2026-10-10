@@ -3,6 +3,7 @@ import qs.Services
 import "WindowModel.js" as WindowModel
 import "WorkspaceModel.js" as WorkspaceModel
 import "BrowserModel.js" as BrowserModel
+import "ReorderModel.js" as ReorderModel
 import "state" as Session
 
 // Keep access to DMS's internal compositor services in one place.
@@ -10,16 +11,17 @@ import "state" as Session
 QtObject {
     id: state
     property string outputName: ""
+    property bool faviconsEnabled: true
     readonly property bool available: CompositorService.isNiri
     readonly property var windows: available ? NiriService.windows : []
     readonly property var workspaces: available ? NiriService.allWorkspaces : []
     readonly property var outputWorkspaces: WorkspaceModel.outputWorkspaces(workspaces, outputName)
     readonly property var workspaceIcons: Session.WorkspaceIcons.assignments
-    readonly property int windowCount: windows.length
-    readonly property int workspaceCount: workspaces.length
     readonly property var activeWorkspace: WindowModel.activeWorkspace(workspaces, outputName)
     readonly property var currentWindows: WindowModel.workspaceWindows(windows, activeWorkspace)
-    readonly property var faviconSources: BrowserModel.faviconSources(windows, Session.BrowserFavicons.tabs)
+    readonly property var faviconSources: available && faviconsEnabled ? BrowserModel.faviconSources(windows,
+                                                                                                     Session.BrowserFavicons.tabs) :
+                                                                         ({})
     property var pendingReorder: null
     readonly property bool reorderBusy: pendingReorder !== null
     property Timer reorderTimeout: Timer {
@@ -27,13 +29,21 @@ QtObject {
         onTriggered: state.cancelReorder()
     }
 
-    function syncWorkspaceIcons() { Session.WorkspaceIcons.sync(workspaces, windows); }
+    function syncWorkspaceIcons() {
+        Session.WorkspaceIcons.sync(workspaces, windows);
+    }
     Component.onCompleted: syncWorkspaceIcons()
     onWorkspacesChanged: Qt.callLater(syncWorkspaceIcons)
-    onWindowsChanged: { Qt.callLater(advanceReorder); Qt.callLater(syncWorkspaceIcons); }
+    onWindowsChanged: {
+        Qt.callLater(advanceReorder);
+        Qt.callLater(syncWorkspaceIcons);
+    }
     onActiveWorkspaceChanged: Qt.callLater(advanceReorder)
     onOutputNameChanged: cancelReorder()
-    onAvailableChanged: { if (!available) cancelReorder(); }
+    onAvailableChanged: {
+        if (!available)
+            cancelReorder();
+    }
 
     function cancelReorder() {
         pendingReorder = null;
@@ -42,81 +52,33 @@ QtObject {
 
     function reorderWindow(sourceId, targetId, after) {
         cancelReorder();
-        const step = available
-            ? WindowModel.reorderStep(windows, activeWorkspace, sourceId, targetId, after) : null;
-        if (!step || step.done)
-            return;
-        pendingReorder = { sourceId: sourceId, targetId: targetId, after: after,
-            workspaceId: activeWorkspace.id, stage: "next", step: null };
+        pendingReorder = available ? ReorderModel.start(windows, activeWorkspace, sourceId, targetId, after) : null;
         advanceReorder();
     }
 
-    function awaitFocus(windowId, stage) {
-        pendingReorder.stage = stage;
-        reorderTimeout.restart();
-        if (!NiriService.focusWindow(windowId)) {
-            cancelReorder();
-            return;
-        }
-        Qt.callLater(advanceReorder);
-    }
-
     function advanceReorder() {
-        const pending = pendingReorder;
-        if (!pending)
+        if (!pendingReorder)
             return;
-        if (!available || !activeWorkspace || activeWorkspace.id !== pending.workspaceId
-                || !currentWindows.some(window => window.id === pending.sourceId)
-                || !currentWindows.some(window => window.id === pending.targetId)) {
+        const result = ReorderModel.advance(pendingReorder, windows, available ? activeWorkspace : null);
+        if (!result.pending) {
             cancelReorder();
             return;
         }
-        const ids = currentWindows.map(window => window.id);
-        const sameIds = other => ids.length === other.length && ids.every((id, i) => id === other[i]);
-        const focusedId = windows.find(window => window.is_focused)?.id ?? null;
-        if (pending.stage === "layout") {
-            if (sameIds(pending.step.expectedIds)) {
-                pending.stage = "next";
-            } else {
-                if (!sameIds(pending.step.ids) || (focusedId !== null && focusedId !== pending.sourceId))
-                    cancelReorder();
-                return;
-            }
-        }
-        if (pending.stage === "next") {
-            const step = WindowModel.reorderStep(windows, activeWorkspace,
-                pending.sourceId, pending.targetId, pending.after);
-            if (!step || step.done) {
-                cancelReorder();
-                return;
-            }
-            pending.step = step;
-            awaitFocus(step.crossColumn ? step.neighborId : pending.sourceId,
-                step.crossColumn ? "neighborFocus" : "sourceFocus");
+        pendingReorder = result.pending;
+        const request = result.request;
+        if (!request)
             return;
-        }
-        if (!sameIds(pending.step.ids)) {
+        reorderTimeout.restart();
+        const accepted = request.focusId !== undefined ? NiriService.focusWindow(request.focusId) : NiriService.send({
+                                                                                                                         "Action": {
+                                                                                                                             [request.action]:
+                                                                                                                             {}
+                                                                                                                         }
+                                                                                                                     });
+        if (!accepted)
             cancelReorder();
-            return;
-        }
-        const latest = WindowModel.reorderStep(windows, activeWorkspace,
-            pending.sourceId, pending.targetId, pending.after);
-        if (!latest || latest.done || latest.action !== pending.step.action
-                || latest.neighborId !== pending.step.neighborId) {
-            cancelReorder();
-            return;
-        }
-        if (pending.stage === "neighborFocus" && focusedId === pending.step.neighborId) {
-            // Niri swaps with the adjacent column's active tile. Select it first.
-            awaitFocus(pending.sourceId, "sourceFocus");
-        } else if (pending.stage === "sourceFocus" && focusedId === pending.sourceId) {
-            pending.stage = "layout";
-            reorderTimeout.restart();
-            const action = {};
-            action[pending.step.action] = {};
-            if (!NiriService.send({ "Action": action }))
-                cancelReorder();
-        }
+        else if (request.focusId !== undefined)
+            Qt.callLater(advanceReorder);
     }
 
     function focusWorkspace(workspaceId) {
@@ -151,8 +113,15 @@ QtObject {
     function closeWindow(windowId) {
         cancelReorder();
         // Close the clicked window directly, including when it is not focused.
-        if (available && windowId !== null && windowId !== undefined
-                && currentWindows.some(window => window.id === windowId))
-            NiriService.send({ "Action": { "CloseWindow": { "id": windowId } } });
+        if (available && windowId !== null && windowId !== undefined && currentWindows.some(window => window.id
+                                                                                                      === windowId))
+
+            NiriService.send({
+                                 "Action": {
+                                     "CloseWindow": {
+                                         "id": windowId
+                                     }
+                                 }
+                             });
     }
 }

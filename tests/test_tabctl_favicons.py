@@ -1,14 +1,16 @@
 """Wire format, image handling, and subscription lifecycle regression tests."""
+
 import contextlib
 import importlib.util
 import io
-from pathlib import Path
 import tempfile
-from types import SimpleNamespace
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 
-spec = importlib.util.spec_from_file_location("tabctl_favicons",
-    Path(__file__).resolve().parents[1] / "scripts/tabctl-favicons.py")
+spec = importlib.util.spec_from_file_location(
+    "tabctl_favicons", Path(__file__).resolve().parents[1] / "scripts/tabctl-favicons.py"
+)
 bridge = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bridge)
 
@@ -16,8 +18,10 @@ spec.loader.exec_module(bridge)
 class IconTests(unittest.TestCase):
     def test_active_wire_rows_only_with_profile_identity(self):
         with tempfile.TemporaryDirectory() as directory:
-            rows = [(1, 10, "One", "https://example.com", 0, True, False, "https://example.com/a.svg"),
-                    (1, 11, "Hidden", "", 1, False, False, "https://example.com/b.png")]
+            rows = [
+                (1, 10, "One", "https://example.com", 0, True, False, "https://example.com/a.svg"),
+                (1, 11, "Hidden", "", 1, False, False, "https://example.com/b.png"),
+            ]
             tabs = bridge.active_tabs("Helium2", rows, directory)
             self.assertEqual(len(tabs), 1)
             self.assertEqual(tabs[0]["instance"], "Helium2")
@@ -36,9 +40,19 @@ class IconTests(unittest.TestCase):
 
     def test_missing_invalid_oversized_and_non_web_sources_fall_back(self):
         with tempfile.TemporaryDirectory() as directory:
-            for source in (None, "", "file:///etc/passwd", "chrome://favicon/a", "javascript:alert(1)",
-                           "https://user:pass@example.com/a", "https://", "data:text/html,hi",
-                           "data:image/png;base64,!", "data:image/png,", "data:image/png," + "x" * 2100000):
+            for source in (
+                None,
+                "",
+                "file:///etc/passwd",
+                "chrome://favicon/a",
+                "javascript:alert(1)",
+                "https://user:pass@example.com/a",
+                "https://",
+                "data:text/html,hi",
+                "data:image/png;base64,!",
+                "data:image/png,",
+                "data:image/png," + "x" * 2100000,
+            ):
                 self.assertEqual(bridge.icon_source(source, directory), "", source)
 
 
@@ -71,8 +85,12 @@ class LifecycleTests(unittest.TestCase):
         self.sub.directory = self.temp.name
         self.sub.bus = Bus()
         self.sub.Gio = SimpleNamespace(DBusCallFlags=SimpleNamespace(NONE=0))
-        self.sub.GLib = SimpleNamespace(VariantType=SimpleNamespace(new=lambda value: value),
-            Error=RuntimeError, timeout_add=self.timer, source_remove=lambda id: self.timers.pop(id))
+        self.sub.GLib = SimpleNamespace(
+            VariantType=SimpleNamespace(new=lambda value: value),
+            Error=RuntimeError,
+            timeout_add=self.timer,
+            source_remove=lambda id: self.timers.pop(id),
+        )
         self.name = bridge.PREFIX + "Helium"
         self.rows = [(1, 10, "One", "", 0, True, False, "https://example.com/a.png")]
 
@@ -83,6 +101,59 @@ class LifecycleTests(unittest.TestCase):
 
     def complete(self, index, rows):
         self.sub.bus.calls[index][-1](self.sub.bus, rows)
+
+    def test_inline_files_are_retained_until_no_profile_references_them(self):
+        inline = "data:image/png;base64,aGVsbG8="
+        rows = [(1, 10, "One", "", 0, True, False, inline)]
+        second = bridge.PREFIX + "Helium2"
+        self.sub.add(self.name, ":1.1")
+        self.complete(0, rows)
+        self.sub.add(second, ":1.2")
+        self.complete(1, rows)
+        self.assertEqual(len(list(Path(self.temp.name).iterdir())), 1)
+        self.sub.remove(self.name)
+        self.sub.emit()
+        self.assertEqual(len(list(Path(self.temp.name).iterdir())), 1)
+        self.sub.remove(second)
+        self.sub.emit()
+        self.assertEqual(list(Path(self.temp.name).iterdir()), [])
+
+    def test_disappearing_startup_profile_does_not_stop_subscription(self):
+        live = bridge.PREFIX + "Helium2"
+
+        class StartupBus(Bus):
+            def connect(self, *_args):
+                pass
+
+            def signal_subscribe(self, *_args):
+                pass
+
+            def call_sync(self, *_args):
+                method = _args[3]
+                if method == "ListNames":
+                    value = ([bridge.PREFIX + "Helium", live],)
+                elif _args[4] == bridge.PREFIX + "Helium":
+                    raise RuntimeError("profile disconnected")
+                else:
+                    value = (":1.2",)
+                return SimpleNamespace(unpack=lambda: value)
+
+        bus = StartupBus()
+        gio = SimpleNamespace(
+            bus_get_sync=lambda *_args: bus,
+            BusType=SimpleNamespace(SESSION=0),
+            DBusSignalFlags=SimpleNamespace(NONE=0),
+            DBusCallFlags=SimpleNamespace(NONE=0),
+        )
+        glib = SimpleNamespace(
+            Error=RuntimeError,
+            Variant=lambda _kind, value: value[0],
+            VariantType=SimpleNamespace(new=lambda value: value),
+            timeout_add=self.timer,
+        )
+        subscriber = bridge.Subscriber(gio, glib, self.temp.name)
+        self.assertEqual(list(subscriber.services), [live])
+        self.assertEqual(len(bus.calls), 1)
 
     def test_disconnect_clears_snapshot_and_ignores_late_reply(self):
         self.sub.add(self.name, ":1.1")

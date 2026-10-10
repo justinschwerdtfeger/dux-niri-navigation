@@ -1,0 +1,22 @@
+{
+  "name": "Justin Navigation (DMS 1.6.2)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "developer",
+  "workspaceFolder": "/workspaces/justin-shell",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/justin-shell,type=bind",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "TheQtCompany.qt-qml",
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "timonwong.shellcheck"
+      ]
+    }
+  }
+}

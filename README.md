@@ -1,90 +1,77 @@
 # Justin Navigation
 
-A DMS plugin project for Material Shell-inspired navigation on Niri: window icons and titles across the top and workspace icons down the left.
+A DankMaterialShell (DMS) plugin for Niri: window icons and titles across a horizontal bar, and workspace icons down a vertical bar. DMS owns the bars, theme, launcher, and settings; Niri owns layout, focus, and dynamic workspace lifetime.
 
-The horizontal widget shows app icons for windows on the workspace active on its monitor, ordered by Niri's layout. Each tab shows its icon and the window's own title, without an added application name. Width follows the window's visual width at a stable monitor-based scale; small tabs have a readability minimum. **Window tab width** in plugin settings adjusts the scale (120–480 px for a monitor-wide window, default 240 px). Long titles elide; hovering shows the application name and window title in a native DMS tooltip, which uses DMS’s single-line width limit. Held window tabs use an opaque theme background so overlapping titles stay covered. Press the left mouse button on a window tab to focus its window immediately, or middle-click to request that it close; left-drag a tab to reorder the actual Niri windows while neighboring tabs slide aside as its leading edge overlaps 50% of their width, use the arrows or hold a dragged tab near the viewport edge to reach overflow, and click **+** to open DMS's launcher. Scroll up/left over the widget to focus Niri’s previous column, or down/right for the next column; DMS reverse scrolling reverses those directions. Wheel input has no timed cooldown; fast and coalesced wheel steps are preserved. The plugin’s **Reverse scroll direction** toggle defaults off; turn it on to invert DMS’s normal direction. Manual overflow browsing stays in place across state updates until the active window changes. Floating windows are excluded; tiled windows without layout positions follow positioned windows in ID order. Both arrows sit on the right before **+**. Arrows appear only when the strip reaches its width ceiling and overflows; expanding to fit a new window does not briefly show them. With no tiled windows, only **+** is shown.
+## Use
 
-The vertical widget is a scrolling workspace icon rail for the hosting monitor. It shows one monochrome Material Symbols icon per workspace, with 100 choices in the picker, highlights the active workspace, and keeps Niri's trailing empty workspace available. Left-click switches to that workspace. Right-click opens a themed, searchable icon picker beside the bar, with padded controls and a taller icon grid: choose an icon or pin favorites for later. Right-click any icon in the picker to pin/unpin it. Pinned icons appear first and persist through DMS settings; workspace icon assignments last for the shell session and disappear when the workspace is removed. Automatic selection uses the first observed window, with simple categories such as a browser icon for Firefox or Helium; an empty workspace starts with an empty-workspace icon.
-
-Switching workspaces fades and gently slides the new window tabs into place. When windows open or close, surviving tabs slide into their new positions and new tabs fade in. The strip also eases its width as windows change, keeping each tab's proportional width and the hosting bar's width ceiling. Automatic focus scrolling waits for width growth to settle so adding a rightmost window does not shift earlier tabs temporarily. Transitions follow DMS's animation speed setting and snap when animations are disabled. Visible animation in the running DMS session still needs verification.
-
-## Intended behavior
-
-For one browser page per window, the optional [Justin Window Tabs extension](extensions/window-tabs/README.md) moves newly created Helium tabs into separate windows. Load `extensions/window-tabs` unpacked from `chrome://extensions`; its toolbar button pauses/resumes detaching. Combine it with Helium's Dynamic layout to hide the tab strip in single-tab windows. Existing tabs are left alone when loading; newly restored tabs can be separated. Live Helium/Niri focus behavior remains to be verified. The external-link wrapper is recorded in [Configuration](docs/CONFIGURATION.md).
-
-- Top bar: windows on the bar's current workspace, in Niri's layout order, with icons and window titles, stable proportional widths, and click-to-focus; floating windows are excluded.
-- Top-bar plus: open the existing DMS app launcher. Let Niri place newly created windows.
-- Left bar: dynamic workspace navigation with small user-selected icons.
-- Keep unnamed workspaces that disappear when empty; do not turn them into persistent named workspaces.
-- Reuse DMS for settings, launcher, notifications, and other desktop services.
-
-The project name and plugin id are provisional. This is a plugin, not a shell or compositor fork.
-
-## Local development
-
-Requires Niri and a functioning DMS installation with its supported Quickshell runtime. This plugin loads inside DMS; it is not a standalone `qs -p` configuration.
-
-For a step-by-step first installation, see [Loading the plugin](docs/LOADING.md). From the repository root:
+Requires DMS with Niri and its supported Quickshell runtime. The inspected baseline is **DMS 1.6.2**, **Quickshell 0.3.1**, and **Niri 26.04**. Internal DMS APIs can change across releases.
 
 ```bash
 make link-plugin
 ```
 
-This creates a development symlink, so DMS reads edits directly from this repository. It leaves an existing matching link alone and refuses to replace any other existing path. No sudo is needed.
+In DMS Settings → Plugins, scan and enable **Justin Navigation**, then add it to a bar. A horizontal instance shows windows; a vertical instance shows workspaces. Each instance follows its hosting monitor. The link helper respects `XDG_CONFIG_HOME`, accepts an existing link to this repo, and refuses to replace other content. See [Loading](docs/LOADING.md) for setup and troubleshooting.
 
-In DMS Settings → Plugins, scan for plugins, enable **Justin Navigation**, then add it to a **horizontal** DankBar widget list. Start with a mostly empty bar section. **Allow full-width growth** is enabled by default: the strip grows with its window count up to the hosting bar’s available content width, reserving the actual pill padding, other widgets, and gaps. It does not stretch a short list to fill the bar. For crowded bars, disable this option and set a pixel maximum (default 640, range 240–7680). On the inspected DMS 1.6.2 host, the plugin subtracts other widgets in its section and reserves occupied neighboring sections. Empty center containers do not cap growth. A short list still uses only its natural width.
+## Window strip
 
-Application icons use 85% of the available icon slot. Favicons use 85% of that application-icon size, horizontally centered in the same slot with a one-pixel downward optical adjustment, to balance their often denser artwork. Arrows and plus retain their size. Hover and press highlighting applies to individual buttons. Buttons use the full DMS bar height. In **Settings → DankBar**, select the bar and adjust **Size** to change its height. **Padding** and **Remove Widget Padding** control horizontal padding around this plugin, not its button height. The horizontal pill background and outline also fill the bar height.
+- Shows tiled windows on the monitor’s active workspace, ordered by Niri columns and tiles. Floating windows are excluded.
+- Shows application icons and exact window titles, without an added app-name label. Hover displays DMS’s native app/title tooltip.
+- Scales each tab independently from the monitor width, with a readability minimum. **Window tab width** adjusts that scale (120–480 px for a monitor-wide window; default 240).
+- Focuses on left press, requests close on middle-click, and reorders real Niri windows on left drag. Neighbors make room at 50% overlap. Dragging near an edge scrolls overflow.
+- Grows with the list while reserving other bar widgets and padding. **Allow full-width growth** defaults on; disable it to apply **Window strip width** (default 640 px).
+- Shows overflow arrows before **+** only when needed. Manual overflow browsing stays put until focus changes. Empty workspaces show only **+**, which opens DMS’s launcher on its focused monitor.
+- Wheel up/left focuses the previous column; down/right focuses the next. DMS reverse scrolling and the plugin’s optional **Reverse scroll direction** compose; the plugin option defaults off.
 
-Helium windows can show their active website's favicon instead of the application icon. Install the [TabCtl extension and native messaging helper](https://github.com/slastra/tabctl), register the helper with `tabctl install`, and confirm `tabctl status` reports a connected Helium browser. The plugin subscribes to TabCtl's D-Bus events automatically; it also requires `/usr/bin/python3` with PyGObject/Gio (Fedora: `python3-gobject`). No extra service or extension is needed. Each window still has one entry, showing its active browser tab's favicon. Windows with the same title can share a favicon when every matching active tab supplies the same nonempty icon source. Missing/failed images or conflicting matches fall back to the application icon. See [favicon compatibility limits](docs/DEVELOPMENT.md#tabctl-favicons).
+Buttons and the horizontal pill fill the bar height. DMS’s **Size** setting controls height; widget padding controls horizontal spacing. Transitions follow DMS animation settings.
 
-For the workspace rail, add **Justin Navigation** to a DMS bar positioned **Left**. The same plugin renders the window strip on horizontal bars and the workspace rail on vertical bars. This repository change does not create or reconfigure desktop bars.
+## Workspace rail
 
-After edits, use the plugin's **Reload** button in Settings → Plugins, or:
+Shows the monitor’s workspaces, including its trailing empty workspace. Left-click switches workspace; right-click opens a searchable picker with 100 monochrome DMS Material Symbols. Right-click a picker icon to pin/unpin it. Pinned symbols persist through DMS settings; workspace assignments live only for the shell session and are removed with the workspace. Choosing an icon never names or retains a workspace.
+
+Empty workspaces start with `empty_dashboard`; the first observed window seeds a simple app category. Assignments stay stable when that window closes. The picker’s current layout is intentionally retained.
+
+## Optional favicons
+
+Helium windows can use their active page’s favicon through the existing [TabCtl](https://github.com/slastra/tabctl) extension/native helper. This requires `/usr/bin/python3` with PyGObject/Gio and a connected TabCtl Helium service. The plugin subscribes to events without polling or controlling tabs. Missing, failed, or conflicting images use the application icon.
+
+TabCtl 2.3.0 omits favicon-only notifications, so late icons can remain stale. A fix in the separate TabCtl project is active in the user's local 2.3.0.1 test build; a delayed favicon change was verified through the DMS strip. Exact-title matching and unauthenticated Qt image loading have additional limits. See [favicon compatibility](docs/DEVELOPMENT.md#favicons) and the separate-project patch record in [Configuration](docs/CONFIGURATION.md).
+
+## Development
+
+The devcontainer supplies the linters, formatters, Qt Quick Test, and a DMS 1.6.2 source snapshot. Docker and the Dev Container CLI are available on the reviewed host; no host QML-tool installation is needed.
 
 ```bash
-dms ipc call plugins reload justinNavigation
+make dev-up
+make dev-check
 ```
 
-Verified in DMS 1.6.2 with Quickshell 0.3.1. The running shell uses DMS’s embedded UI and exposes the `plugins` IPC target. Helper-component edits can remain cached after plugin reload; see the loading guide. The launcher follows DMS's focused-monitor behavior; the plus button does not force the launcher onto an inactive monitor.
+Alternatively, use **Dev Containers: Reopen in Container** in VS Code. Inside the container, run `make check`, `make test-qml`, or `make format` directly. See [Development](docs/DEVELOPMENT.md#devcontainer) for access, versions, and rebuild instructions.
 
-To remove the development link, first verify it points here, then remove only that link and disable the plugin in DMS. Repository checks do not alter your desktop configuration.
-
-## Editor support
-
-An optional setup script generates local DMS imports for VS Code. Install the official **Qt QML** extension and run **Qt: Restart QML Language Server** after opening this repository. See [development notes](docs/DEVELOPMENT.md#vs-code-qml-imports) for refreshing the imports after DMS upgrades. Generated metadata and editor paths are gitignored. The setup preserves DMS JavaScript helpers as well as type metadata so relative imports resolve.
-
-## Checks
+For native development instead:
 
 ```bash
+npm ci
+python3 -m pip install -r requirements-dev.txt
+python3 scripts/setup-qml-tooling.py --dms-source /path/to/active/dms/ui
 make check
 ```
 
-Requires Python 3 and Node.js. This validates packaging, checks the setup script's syntax, runs window/workspace-model and tooling recovery tests, checks the link script's syntax, and checks patch whitespace. It does not compile QML. Earlier widget versions were loaded in DMS 1.6.2 and screenshots confirmed rendering. A user-authorized DMS restart confirmed the latest wheel handler loaded in both horizontal instances without plugin QML errors. Live rapid scrolling and visual interaction checks still need confirmation. The workspace rail passed isolated QML checks with mocked services; visible DMS rail/picker behavior remains unverified. Click, overflow, and launcher interaction checks remain. See [development notes](docs/DEVELOPMENT.md).
+Development checks require Node.js 22.13+ (or 24+), Python 3.11+, Ruff, ShellCheck, and Qt’s `qmllint`/`qmlformat`. Qt tools must match the installed Qt runtime. Node dependencies and Ruff are pinned. Development tools are not needed to run the plugin.
 
-## Project map
+`make check` runs packaging checks, JavaScript/Python behavior tests, ESLint, Ruff, Prettier, ShellCheck, QML lint/format checks, and patch whitespace checks. `make format` applies formatting. `make test` runs the model/tooling tests without DMS imports. `make test-qml` runs isolated Qt Quick tests with mocked DMS services; it needs `qmltestrunner`. None of these targets starts or restarts the desktop shell.
 
-| File | Purpose |
-| --- | --- |
-| `plugin.json` | DMS plugin identity and entry points |
-| `NavigationWidget.qml` | Horizontal and vertical bar components |
-| `BarGeometry.qml` | Adapter for DMS bar content bounds and sibling sizing |
-| `NiriState.qml` | Boundary around DMS compositor services |
-| `WindowModel.js` | Pure output filtering and window-ordering logic |
-| `BrowserModel.js` | Conservative active-browser-tab to Niri window matching |
-| `state/BrowserFavicons.qml` | Shared TabCtl event subscriber |
-| `scripts/tabctl-favicons.py` | Read-only D-Bus bridge and inline favicon handling |
-| `WorkspaceModel.js` | Workspace filtering, icon categories, assignment lifecycle, and favorites |
-| `state/WorkspaceIcons.qml` | Shared session-local workspace icons |
-| `WorkspaceRail.qml` | Bounded scrolling workspace navigation |
-| `WorkspaceIconMenu.qml` | Themed searchable icon picker and pinned favorites |
-| `WorkspaceButton.qml` | Monochrome workspace/icon button |
-| `WindowStrip.qml` | Proportional icon/title strip and navigation controls |
-| `NavigationButton.qml` | Themed icon/action button |
-| `NavigationSettings.qml` | DMS-integrated settings |
-| [Design](docs/DESIGN.md) | Decisions, limits, and next milestones |
-| [Development](docs/DEVELOPMENT.md) | Upstream references and validation |
-| [Loading](docs/LOADING.md) | First-time setup, reload, and troubleshooting |
-| [Agent guidance](AGENTS.md) | Context and working rules for future agents |
+Reload with `dms ipc call plugins reload justinNavigation`. DMS can cache helper components across reloads; a shell restart may be needed to load helper changes. Runtime validation and its limits are documented in [Development](docs/DEVELOPMENT.md).
 
-The full review of the first three commits and its fixes are recorded in [Review](docs/REVIEW.md).
+## Code map
+
+| Area                             | Files                                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------------------------- |
+| DMS entry points and settings    | `NavigationWidget.qml`, `NavigationSettings.qml`, `plugin.json`                          |
+| Compositor and host boundaries   | `NiriState.qml`, `BarGeometry.qml`                                                       |
+| Window navigation                | `WindowStrip.qml`, `NavigationButton.qml`, `WindowModel.js`, `ReorderModel.js`           |
+| Workspace navigation             | `WorkspaceRail.qml`, `WorkspaceButton.qml`, `WorkspaceIconMenu.qml`, `WorkspaceModel.js` |
+| Shared model updates             | `ModelUtils.js`                                                                          |
+| Session state and favicon bridge | `state/`, `BrowserModel.js`, `scripts/tabctl-favicons.py`                                |
+| Tooling and regression tests     | `.devcontainer/`, `scripts/`, `tests/`, `Makefile`                                       |
+
+[Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records this refactor. [Agent guidance](AGENTS.md) sets maintenance boundaries. Git history retains earlier implementation notes.

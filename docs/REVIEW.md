@@ -1,23 +1,33 @@
-# Full-history review — 2026-09-30
+# Codebase review — 2026-10-10
 
-Reviewed every existing commit, all tracked implementation files, tests, and documentation. API checks used the active DMS 1.6.2 embedded UI at `/run/user/1000/danklinux-shell/fc3c244a314d77c8`, including the Niri service, plugin host/pill, launcher service, theme text, and icon resolver. The review preserves the current window-strip milestone; workspace navigation and icon assignments remain pending.
-
-| Commit | Review |
-| --- | --- |
-| `4d281b9` — scaffold | Reviewed packaging, service boundary, diagnostic views, settings, and initial design. Later prototype work already corrected the original settings-ID injection assumption and replaced diagnostic horizontal content. The remaining vertical count is explicitly diagnostic. |
-| `f63c73c` — top-bar prototype | Output/ID filtering and stable proportional widths have useful regression coverage. Found overflow browsing interrupted by snapshot replacement, an unsupported launcher fallback, automatic rich-text interpretation in the standard tooltip, and a missing accessibility action on the custom button. |
-| `5dabbf5` — QML tooling | Syntax validation did not exercise refresh behavior. Found destructive source/destination overlap, loss of the previous setup on scanner failure, and weak metadata validation. Added staged publication and recovery tests. |
+Reviewed the complete tracked plugin, pure models, scripts, tests, manifests, and documentation against installed/active DMS 1.6.2. Preserve the existing visual style; improve correctness, state updates, DMS consistency, and repeatable checks.
 
 ## Changes
 
-- Preserve manual overflow browsing across title, geometry, and window-list updates. Focus changes resume following the active window. Extract scroll-offset calculation into the pure model and test bounds, variable widths, oversized tabs, removal, and manual browsing.
-- Use the inspected DMS 1.6.2 launcher API directly. The removed `openSpotlight` fallback does not exist in the verified source; older shells are not promised compatibility.
-- Render tooltip titles literally, including HTML-looking strings. DMS's existing `StyledText` already defaults to plain text; the explicit title setting documents that contract. Add an accessibility press action that respects the button's enabled state.
-- Validate tooling prerequisites and reject source/tooling overlap before copying. Generate metadata in a temporary staging directory, check every required module, dereference scanner links, then publish with rollback. Scanner errors, missing metadata, timeouts, and publication failures preserve the previous setup. Keep existing JSON/JSONC editor preferences untouched.
-- Add tooling behavior tests to `make check`; preserve all existing stable-width regressions. Remove resolved design questions and update validation documentation.
+| Finding                                                                                       | Resolution                                                                                                                  |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Views duplicated ListModel reconciliation and rewrote unchanged roles                         | Shared `ModelUtils.syncRows`; preserve delegates and write only changed roles; exhaustive small-list edit tests             |
+| Workspace seeding repeatedly filtered/sorted all windows and serialized whole assignment maps | One-pass first-window index; retain unchanged assignments by identity                                                       |
+| Favicon matching repeatedly scanned all active tabs                                           | One title-index pass; preserve conservative duplicate agreement and handle arbitrary page titles                            |
+| Drag acknowledgment logic lived inside a large QML adapter                                    | Pure `ReorderModel` with focus/layout sequencing tests; QML owns dispatch and timeout                                       |
+| Row and preview-offset animations could conflict during drag acknowledgment                   | One animated absolute visual position per tab, keyed by ID; retain dropped-tab stacking/background                          |
+| Navigation buttons lacked consistent keyboard activation/focus feedback                       | Enter/Return/Space activation and theme-colored focus outline                                                               |
+| Inline favicon files accumulated across a long shell session                                  | Remove files once no profile references them; add lifecycle regression                                                      |
+| A startup profile could disappear between D-Bus discovery calls                               | Ignore that discovery race and keep subscribing to other profiles                                                           |
+| QML, JS, Python, shell, and docs lacked enforced lint/format checks                           | Qt tools, ESLint, Ruff, ShellCheck, Prettier, pinned development dependencies, explicit check targets, working devcontainer |
+| Current docs contradicted scroll defaults and repeated obsolete experiments                   | Rewrite around current contracts, API baseline, validation matrix, and acceptance checks                                    |
+| Optional tab-detaching extension broadened scope                                              | Remove it and its tests/docs at the user’s request; keep independent TabCtl favicon support                                 |
 
-## Validation and remaining work
+The icon picker retains its current controls/layout at the user’s request. No automatic-reset action was added. Desktop configuration was not reconfigured.
 
-`make check` passes fourteen window-model tests and eight tooling tests plus packaging, syntax, and whitespace checks. A real tooling refresh succeeded against the installed embedded source. An isolated nonvisual Quickshell helper using the existing Wayland backend reported all five plugin QML components ready without instantiating the plugin, panels, or desktop services, or restarting DMS. The host component needs that backend for `PanelWindow`; the other four components also loaded offscreen.
+## Validation
 
-Live interaction remains unverified for these changes: drag/arrow browsing while titles and geometry update, automatic scrolling after focus changes, literal tooltips, accessibility activation, and launcher clicks. Shared bars still need a configured width cap because DMS exposes no per-widget remaining-width contract. The workspace rail and shared session-local workspace icons require a future implementation and runtime validation.
+The Docker devcontainer builds successfully, is accessible through the Dev Container CLI, and runs checks as an unprivileged user against the mounted repository. `make check` passes: packaging, 53 JavaScript behavior tests, 16 Python tests, ESLint, Ruff lint/format, Prettier, ShellCheck, strict zero-warning QML lint, QML format consistency, and diff whitespace. `make test-qml` passes all five component tests plus initialization/cleanup (seven QtTest passes).
+
+With user authorization, restarted the existing DMS service after a plugin reload retained an old helper component. Both plugin instances then loaded without plugin QML errors. The user reports improved release-time tab movement. The isolated drag test samples settled preview positions throughout an order acknowledgment; it also passes against the old animation implementation, so it does not independently reproduce the original bug. Rapid/partial acknowledgments, changing tab widths, and overflow drops still need broader live acceptance.
+
+Live read-only inspection matched all 12 Helium windows to valid favicon URLs and confirmed TabCtl helper/extension compatibility. It also confirmed the installed TabCtl 2.3.0 event listener omits favicon-only notifications. With explicit user authorization, patched the separate TabCtl source to emit on favicon changes/completed loads. All 36 extension tests pass. The user loaded the local 2.3.0.1 test build; `tabctl status` confirms its connection. A local fixture changed only its icon after six seconds, and the actual subscriber emitted distinct icon snapshots. The user confirmed the DMS icon changed from red to green. See [Configuration](CONFIGURATION.md).
+
+Runtime validation must still distinguish matching, notification delivery, and image readiness. Visible workspace-rail acceptance, unusual center modes/multiple growing instances, and compositor generation/ID reuse remain compatibility limits. See [Development](DEVELOPMENT.md#runtime-acceptance).
+
+Earlier implementation and review notes remain in Git history, including the 2026-09-30 review. They are historical evidence, not the current API or behavior contract.

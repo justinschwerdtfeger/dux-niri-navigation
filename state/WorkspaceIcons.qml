@@ -7,7 +7,7 @@ QtObject {
     property var assignments: ({})
     function sync(workspaces, windows) {
         const next = WorkspaceModel.reconcile(assignments, workspaces, windows);
-        if (JSON.stringify(next) !== JSON.stringify(assignments))
+        if (next !== assignments)
             assignments = next;
     }
     function setIcon(workspaceId, icon) {

@@ -1,5 +1,40 @@
 # Desktop compatibility audit — 2026-09-30
 
+## TabCtl favicon event fix — 2026-10-10
+
+With explicit user authorization, patched the separate project at
+`/var/home/justin/Documents/Builds/tabctl/extensions/shared/core.js` to emit
+debounced notifications for `favIconUrl` changes and completed page loads.
+Loading-progress updates remain ignored. Updated its Chrome/Firefox behavior
+regression, rebuilt both bundles, and passed all 36 extension tests and both
+syntax checks. No browser tabs or desktop settings were changed.
+
+Helium initially used the packaged TabCtl extension
+`baomblllgemcgbignhpbipgiofmjdhpn`, version 2.3.0, rather than loading this source
+checkout. Reloading that packaged copy alone does **not** activate the source
+patch. The rebuilt extension must be installed with the native helper's allowed
+origin respected, or the upstream packaged extension must incorporate the fix.
+The local test installation and live favicon-only notifications are verified below.
+
+At the user's request, prepared a local unpacked test build at
+`/var/home/justin/Documents/Builds/tabctl/build/helium-favicon-test`. Its manifest
+uses the packaged extension's public key, preserving the same extension ID;
+verified it against Helium's native-messaging allowed origin. It contains the
+rebuilt Chrome bundle, original permissions/assets, and `TESTING.md` with loading
+and packaged-version restoration instructions. The user loaded that folder through
+Helium's extension manager. The test copy is labeled **TabCtl (favicon test)**,
+version **2.3.0.1**; `tabctl status` confirms it is connected with protocol v2.
+
+The local manual fixture keeps its title/URL fixed and changes its PNG favicon
+from red to green after six seconds. The actual plugin subscriber emitted two
+distinct icon snapshots, and the user confirmed both colors appeared in the DMS
+strip. This verifies late-icon event delivery and inline image rendering; remote
+authentication, ambiguous titles, and unchanged-URL image caching remain separate
+limits. The temporary loopback test server was stopped after validation.
+
+The sections below are historical records of earlier authorized desktop changes,
+not current setup instructions or current plugin validation claims.
+
 ## External Helium links — 2026-10-08
 
 At the user's explicit request, installed `~/.local/bin/helium-new-window` and a hidden `~/.local/share/applications/helium-new-window.desktop` handler. The wrapper executes `env DESKTOPINTEGRATION=1 "$HOME/AppImages/helium.appimage" --new-window "$@"`. Registered this separate desktop entry for HTTP and HTTPS, leaving the AppImage-managed `helium.desktop` intact so its regeneration does not overwrite the wrapper. The inspected launcher reports Helium AppImage 0.18.3.1. This requires the AppImage to remain at that path.

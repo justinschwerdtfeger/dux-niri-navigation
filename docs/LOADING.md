@@ -1,69 +1,52 @@
-# Loading the custom plugin
+# Loading Justin Navigation
 
-This plugin runs inside DMS. You do not run its QML files directly, and you do not need to build or install system packages.
+## Install and enable
 
-## 1. Link the repository
-
-In a terminal:
+Run from the repository:
 
 ```bash
-cd /var/home/justin/Documents/Projects/justin-shell
 make link-plugin
 ```
 
-This creates `~/.config/DankMaterialShell/plugins/JustinNavigation` (or the equivalent under `XDG_CONFIG_HOME`) pointing to this repository. The helper is safe to repeat and refuses to overwrite another directory or link. Keep the repository in place while the link is installed.
+The helper links this checkout to `$XDG_CONFIG_HOME/DankMaterialShell/plugins/JustinNavigation`, defaulting to `~/.config`. Keep the checkout in place while linked. Repeated calls accept the matching link and refuse to overwrite another path. Runtime needs DMS/Niri and the supported Quickshell; lint tools are only for development.
 
-## 2. Enable the plugin
+In DMS Settings → Plugins, scan and enable **Justin Navigation**. Then add it to a horizontal bar’s widget list. Enabling a plugin and placing a widget are separate steps. Start in a section with some free space.
 
-Open DMS Settings, then **Plugins**. You can open Settings with:
+The strip shows that monitor’s active workspace, including its unfocused active window. Floating windows are excluded. An empty or floating-only workspace shows **+**. Arrows appear immediately before **+** only during overflow. Tabs use exact titles and independently proportional widths. DMS tooltips may show the app name.
 
-```bash
-dms ipc call settings open
-```
+**Allow full-width growth** defaults on and reserves sibling widgets, gaps, and pill padding. Disable it for a smaller **Window strip width** limit. **Window tab width** changes the proportional scale. Wheel up/left goes to the previous column and down/right to the next; DMS reverse scrolling and the plugin’s **Reverse scroll direction** toggle reverse that mapping. The plugin toggle defaults off.
 
-Click **Scan** (called **Scan for Plugins** in some versions). Find **Justin Navigation** and enable it. Enabling makes the component available; it does not place it on your bar yet.
+For workspaces, add the same plugin to a vertical bar. In DMS bar settings, create/select a **Left** bar if desired. Left-click changes workspace; right-click opens the icon picker. Right-click picker icons to pin/unpin. These bar configuration choices are manual desktop preferences; repository checks do not apply them.
 
-## 3. Add it to the top bar
+Buttons and the horizontal pill fill the DMS bar height. Adjust **Size** for height, and **Padding/Remove Widget Padding** for horizontal padding. The launcher follows DMS’s focused monitor and may activate an existing app window.
 
-Open **Bar** settings, find the widget lists for your horizontal bar, and add **Justin Navigation** to a section. Start in a section with few other widgets. If your DMS version offers several bars, select the top bar first.
+## Favicons
 
-You should see app icons and window titles for that monitor's active workspace, a **+** button, and both overflow arrows immediately before it on the right, shown only when the strip reaches its width ceiling and needs scrolling. Tab widths follow visual window widths at a fixed monitor-based scale, with a readability minimum for small tabs. No separate application name is added. Floating windows are excluded. An empty or floating-only workspace shows just **+**. The plus button opens the existing DMS launcher, which follows the focused monitor. It does not guarantee that an app will create a new window.
+Register and connect the existing TabCtl extension/native helper, and confirm `tabctl status` shows Helium. System Python needs PyGObject/Gio. The plugin subscribes automatically when a horizontal instance needs favicons. Application icons remain the fallback. See [compatibility limits](DEVELOPMENT.md#favicons) for stale/missing images.
 
-In plugin settings, **Allow full-width growth** defaults on and removes the old 45% cap. The strip grows as windows are added, rather than stretching a short list. Disable it to apply **Window strip width** when other widgets need room. The DMS 1.6.2 adapter reserves other widgets and gaps using actual bar geometry. With free space available, a sufficiently long list reaches the bar’s content edge; short lists do not stretch. Hover an icon for DMS’s native application-name-and-title tooltip (very long titles follow its usual elision limit). Arrows or horizontal dragging reveal additional tabs. Wheel scrolling over the widget focuses Niri’s previous/next column on its output (up/left for next, down/right for previous, reversed by DMS reverse scrolling). In plugin settings, **Reverse scroll direction** defaults on to retain that direction; disable it to follow DMS’s normal scrolling direction. The highlighted icon is the workspace's active window, even on an unfocused monitor.
+## Reload
 
-Buttons fill the bar height. Adjust **Settings → DankBar → Size** to change that height. Widget **Padding** controls horizontal padding; the horizontal pill background and outline also fill the bar height.
-
-Adding it to a vertical bar shows a scrolling workspace icon rail scoped to that bar’s monitor. Left-click navigates; right-click opens the icon picker and pinned favorites.
-
-## 4. Reload after edits
-
-Return to Settings → Plugins and click the **Reload Plugin** button on Justin Navigation. Because the installation is a symlink, there is no copying step. DMS 1.6.2 can cache helper QML components across plugin reloads. If an edit to `NavigationButton.qml` or `WindowStrip.qml` does not appear, restart the existing shell service:
-
-```bash
-systemctl --user restart dms.service
-```
-
-This briefly closes and reopens DMS panels and popouts; application windows remain running. Do not start a second shell.
-
-DMS 1.6.2 supports:
+Use the plugin’s Reload button, or on the inspected DMS 1.6.2 host:
 
 ```bash
 dms ipc call plugins reload justinNavigation
 ```
 
-Check `dms ipc --help` for targets exposed by the running shell. The old local shell lacked this target, but it was replaced with the packaged DMS source on 2026-09-30.
+Helper QML may remain cached. If changed helper properties or behavior do not load, restart the **existing** shell:
 
-## Top and left bars together
+```bash
+systemctl --user restart dms.service
+```
 
-DMS 1.6.2 supports independently configured bars. In Settings → Bar, use **Add Bar**, select the new bar, set its position to **Left**, and choose its widgets. Keep the existing bar at **Top**. Add **Justin Navigation** to the left bar for its workspace rail. Each instance follows its hosting monitor; the horizontal instance remains the window strip. This setup is a desktop preference change you make in DMS, not an action performed by repository checks.
+This briefly interrupts DMS panels/popouts while application windows remain running. Do not start another shell. Agents need session-change authorization before restarting. After upgrades, discover the active embedded UI path from logs or `dms doctor`; the installed source and running UI can differ.
 
-## Troubleshooting
+## Troubleshooting and removal
 
-- **Not listed:** run Scan and check `readlink -f ~/.config/DankMaterialShell/plugins/JustinNavigation`. It should point to this repository, whose root contains `plugin.json`.
-- **Listed but not on the bar:** enabling and adding a bar widget are separate steps.
-- **Failed to load:** inspect the error shown in Plugins and the DMS logs. Include the exact QML error when requesting help.
-- **No windows despite open apps:** check that this is a horizontal bar on the monitor containing those windows. Output selection intentionally does not fall back to another monitor.
-- **Target not found on reload:** check the active shell path/version; older DMS configs lack plugin IPC. The Settings UI is an alternative.
-- **Link already exists:** the helper accepts a link pointing here but refuses to replace other content. Inspect it before changing anything.
+- **Not listed:** scan again; verify the development link resolves to this repo and the root contains `plugin.json`.
+- **Enabled but absent:** add the widget to the selected bar.
+- **No windows:** check orientation, hosting output, active workspace, and whether the windows are floating. The plugin deliberately does not fall back to another monitor.
+- **Clipped strip:** check the hosting section and other widget widths; try the explicit maximum. Unusual centering or multiple growing instances may need host-specific validation.
+- **Old behavior after reload:** inspect helper-cache loading and service logs before treating it as a new code failure.
+- **Load errors:** collect the exact QML error and the installed/running DMS versions.
 
-If you use a custom `XDG_CONFIG_HOME`, use that location when checking the link.
+To uninstall, disable/remove the widget in DMS, verify the link points to this checkout, and remove only that link. Respect a custom `XDG_CONFIG_HOME` when checking paths.

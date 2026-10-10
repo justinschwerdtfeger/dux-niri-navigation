@@ -1,0 +1,11 @@
+.local/
+tmp/
+.agents/
+.codex/
+.aws/
+node_modules/
+package-lock.json
+*.qml
+# QML library directives are handled by scripts/format-models.mjs.
+*Model.js
+ModelUtils.js

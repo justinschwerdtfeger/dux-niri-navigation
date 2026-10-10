@@ -14,3 +14,5 @@ __pycache__/
 # Local upstream checkouts and scratch artifacts
 .local/
 tmp/
+node_modules/
+.ruff_cache/

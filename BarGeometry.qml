@@ -5,15 +5,18 @@ import "WindowModel.js" as WindowModel
 QtObject {
     id: geometry
     required property Item widget
+    required property bool vertical
+    required property string section
+    required property real pillPadding
+    property var pillHost: null
 
     readonly property var host: findHost()
-    readonly property real availableWidth: widget.isVertical ? 0 : availablePrimarySize
-    readonly property real availableHeight: widget.isVertical ? availablePrimarySize : 0
+    readonly property real availableWidth: vertical ? 0 : availablePrimarySize
+    readonly property real availableHeight: vertical ? availablePrimarySize : 0
     readonly property real availablePrimarySize: {
         if (!host)
             return 0;
-        const vertical = widget.isVertical;
-        const size = item => vertical ? item.height : item.width;
+        const size = item => geometry.vertical ? item.height : item.width;
         const stack = host.section.parent;
         const left = stack.children.find(child => child.objectName === "leftSection");
         const center = stack.children.find(child => child.objectName === "centerSection");
@@ -21,16 +24,14 @@ QtObject {
         if (!left || !center || !right || size(stack) <= 0)
             return 0;
         // Never read our own section size: it depends on this very budget.
-        const siblings = host.layout.children.filter(child =>
-            child !== host.wrapper && "itemData" in child && child.visible && size(child) > 0);
+        const siblings = host.layout.children.filter(child => child !== host.wrapper && "itemData" in child && child.visible
+                                                              && size(child) > 0);
         const siblingSizes = siblings.map(size);
-        const padding = widget.activePillHost?.horizontalPadding ?? widget.pillPadding;
-        return WindowModel.barWidthBudget(size(stack), widget.section,
-            widget.section === "left" ? 0 : size(left),
-            widget.section === "center" ? 0 : center.contentStart,
-            widget.section === "center" ? 0 : center.contentSize,
-            widget.section === "right" ? 0 : size(right),
-            siblingSizes, host.layout.widgetSpacing, padding);
+        const padding = pillHost?.horizontalPadding ?? pillPadding;
+        return WindowModel.barWidthBudget(size(stack), section, section === "left" ? 0 : size(left), section
+                                          === "center" ? 0 : center.contentStart, section === "center" ? 0 : center.contentSize,
+                                          section === "right" ? 0 : size(right), siblingSizes, host.layout.widgetSpacing,
+                                          padding);
     }
 
     function findHost() {
@@ -45,8 +46,11 @@ QtObject {
             }
             if (["leftSection", "centerSection", "rightSection"].includes(parent.objectName)) {
                 // CenterSection lays delegates out directly rather than in a Row.
-                return { section: parent, layout: layout ?? parent,
-                    wrapper: wrapper ?? item };
+                return {
+                    section: parent,
+                    layout: layout ?? parent,
+                    wrapper: wrapper ?? item
+                };
             }
             item = parent;
         }
