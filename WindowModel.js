@@ -132,6 +132,17 @@ function tabGeometry(windows, gap, minimumWidth, referenceWidth, preferredWidth 
                 scale,
         ),
     );
+    return tabPositions(widths, gap);
+}
+
+function compactTabGeometry(count, gap, size) {
+    return tabPositions(
+        Array.from({ length: count }, () => size),
+        gap,
+    );
+}
+
+function tabPositions(widths, gap) {
     const starts = [];
     let end = 0;
     widths.forEach((width, index) => {

@@ -1,6 +1,8 @@
-# Justin Navigation
+# Justin Navigation plugins
 
-A DankMaterialShell (DMS) plugin for Niri: window icons and titles across a horizontal bar, and workspace icons down a vertical bar. DMS owns the bars, theme, launcher, and settings; Niri owns layout, focus, and dynamic workspace lifetime.
+Two DankMaterialShell (DMS) plugins for Niri: **Justin Window Tabs** and **Justin Workspaces**. Each works on horizontal or vertical bars, independently of the other. DMS owns the bars, theme, launcher, and settings; Niri owns layout, focus, and dynamic workspace lifetime.
+
+Window Tabs also provides an optional standalone sidebar with readable horizontal titles, independent of DankBar's width limit.
 
 ## Use
 
@@ -10,23 +12,36 @@ Requires DMS with Niri and its supported Quickshell runtime. The inspected basel
 make link-plugin
 ```
 
-In DMS Settings → Plugins, scan and enable **Justin Navigation**, then add it to a bar. A horizontal instance shows windows; a vertical instance shows workspaces. Each instance follows its hosting monitor. The link helper respects `XDG_CONFIG_HOME`, accepts an existing link to this repo, and refuses to replace other content. See [Loading](docs/LOADING.md) for setup and troubleshooting.
+In DMS Settings → Plugins, scan and enable the plugins you want, then add their widgets to any bar. Each instance follows its hosting monitor and bar orientation. The link helper installs both entries, respects `XDG_CONFIG_HOME`, accepts matching links, and refuses to replace other content. Keep the whole checkout in place: the workspace entry shares the root components through a relative symlink.
+
+**Upgrading from Justin Navigation:** horizontal tabs retain their existing widget ID and settings (`justinNavigation`). Replace the old widget on workspace bars with **Justin Workspaces** (`justinWorkspaces`). Pinned icons fall back to the old plugin's favorites until you change them in the new picker. See [Loading](docs/LOADING.md) for migration and setup.
 
 ## Window strip
 
 - Shows tiled windows on the monitor’s active workspace, ordered by Niri columns and tiles. Floating windows are excluded.
-- Shows application icons and exact window titles, without an added app-name label. Hover displays DMS’s native app/title tooltip.
-- Scales each tab independently from the monitor width, with a readability minimum. **Window tab width** adjusts that scale (120–480 px for a monitor-wide window; default 240).
+- Shows application icons and exact window titles, without an added app-name label. Vertical bars default to icons; **Vertical tab display** optionally shows rotated titles or normal title rows for wider bars. Hover displays DMS’s native app/title tooltip in every mode.
+- Horizontal and rotated tabs scale independently from the monitor width, with a readability minimum. **Window tab width** adjusts that scale (120–480 px for a monitor-wide window; default 240). Vertical icons use square buttons; normal title rows keep a compact height while filling the bar's width.
 - Focuses on left press, requests close on middle-click, and reorders real Niri windows on left drag. Neighbors make room at 50% overlap. Dragging near an edge scrolls overflow.
-- Grows with the list while reserving other bar widgets and padding. **Allow full-width growth** defaults on; disable it to apply **Window strip width** (default 640 px).
+- Grows along the bar while reserving other widgets and padding. **Fill available bar space** defaults on; disable it to apply **Window strip length** (default 640 px) to width or height.
 - Shows overflow arrows before **+** only when needed. Manual overflow browsing stays put until focus changes. Empty workspaces show only **+**, which opens DMS’s launcher on its focused monitor.
 - Wheel up/left focuses the previous column; down/right focuses the next. DMS reverse scrolling and the plugin’s optional **Reverse scroll direction** compose; the plugin option defaults off.
 
-Buttons and the horizontal pill fill the bar height. DMS’s **Size** setting controls height; widget padding controls horizontal spacing. Transitions follow DMS animation settings.
+Horizontal buttons and the pill fill the bar height. Vertical buttons fill the widget width; DMS's bar **Size** controls the available cross-axis space. Transitions follow DMS animation settings.
+
+## Standalone window sidebar
+
+In **DMS Settings → Plugins → Justin Window Tabs**, set **Standalone sidebar** to:
+
+- **Always visible titles:** a wide vertical list that reserves its full width for windows.
+- **Expandable icon rail:** a 48-pixel rail that expands into horizontal title rows. Choose **Click** or **Hover** with **Expand sidebar on**. The expand/collapse button works in either mode; Escape collapses it. Hover opens after 200 ms and closes 400 ms after leaving, with both timers held during presses, dragging, and reorder acknowledgment.
+
+**Sidebar title width** defaults to 240 px (160–480 px, capped at half the monitor). Choose the **Sidebar side** and **Sidebar monitor**. Expandable mode overlays windows beyond the compact rail by default; enable **Push windows aside when expanded** to reserve the wider area instead. Preferences apply independently of ordinary bar widgets, which remain available. The sidebar defaults **Off**; no desktop layout is changed by installing the feature.
+
+The sidebar uses the same output-scoped tabs, focus/close actions, favicons, dragging, overflow, launcher, and DMS theme. Width is independent of DMS's **Bar → Appearance → Spacing → Size**, whose DMS 1.6 slider only allows a narrow widget area. Disconnected selected monitors produce no sidebar until they return. Expansion/collapse uses DMS’s animation speed and easing with a title fade inside a stable surface, while preserving icon sizes and scrolling. Transparent space passes clicks through; push mode lets Niri handle the window-layout transition. See [Loading](docs/LOADING.md#standalone-sidebar) for setup and [Development](docs/DEVELOPMENT.md#runtime-acceptance) for live validation limits.
 
 ## Workspace rail
 
-Shows the monitor’s workspaces, including its trailing empty workspace. Left-click switches workspace; right-click opens a searchable picker with 100 monochrome DMS Material Symbols. Right-click a picker icon to pin/unpin it. Pinned symbols persist through DMS settings; workspace assignments live only for the shell session and are removed with the workspace. Choosing an icon never names or retains a workspace.
+Shows the monitor’s workspaces, including its trailing empty workspace, in a horizontal row or vertical rail. Left-click switches workspace; right-click opens a searchable picker with 100 monochrome DMS Material Symbols. Right-click a picker icon to pin/unpin it. Pinned symbols persist through DMS settings; workspace assignments live only for the shell session and are removed with the workspace. Choosing an icon never names or retains a workspace.
 
 Empty workspaces start with `empty_dashboard`; the first observed window seeds a simple app category. Assignments stay stable when that window closes. The picker’s current layout is intentionally retained.
 
@@ -60,18 +75,19 @@ Development checks require Node.js 22.13+ (or 24+), Python 3.11+, Ruff, ShellChe
 
 `make check` runs packaging checks, JavaScript/Python behavior tests, ESLint, Ruff, Prettier, ShellCheck, QML lint/format checks, and patch whitespace checks. `make format` applies formatting. `make test` runs the model/tooling tests without DMS imports. `make test-qml` runs isolated Qt Quick tests with mocked DMS services; it needs `qmltestrunner`. None of these targets starts or restarts the desktop shell.
 
-Reload with `dms ipc call plugins reload justinNavigation`. DMS can cache helper components across reloads; a shell restart may be needed to load helper changes. Runtime validation and its limits are documented in [Development](docs/DEVELOPMENT.md).
+Reload with `dms ipc call plugins reload justinNavigation` or `dms ipc call plugins reload justinWorkspaces`. DMS can cache helper components across reloads; a shell restart may be needed to load helper changes. Runtime validation and its limits are documented in [Development](docs/DEVELOPMENT.md).
 
 ## Code map
 
-| Area                             | Files                                                                                    |
-| -------------------------------- | ---------------------------------------------------------------------------------------- |
-| DMS entry points and settings    | `NavigationWidget.qml`, `NavigationSettings.qml`, `plugin.json`                          |
-| Compositor and host boundaries   | `NiriState.qml`, `BarGeometry.qml`                                                       |
-| Window navigation                | `WindowStrip.qml`, `NavigationButton.qml`, `WindowModel.js`, `ReorderModel.js`           |
-| Workspace navigation             | `WorkspaceRail.qml`, `WorkspaceButton.qml`, `WorkspaceIconMenu.qml`, `WorkspaceModel.js` |
-| Shared model updates             | `ModelUtils.js`                                                                          |
-| Session state and favicon bridge | `state/`, `BrowserModel.js`, `scripts/tabctl-favicons.py`                                |
-| Tooling and regression tests     | `.devcontainer/`, `scripts/`, `tests/`, `Makefile`                                       |
+| Area                             | Files                                                                                                       |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| DMS entry points and settings    | `NavigationWidget.qml`, `NavigationSettings.qml`, `WorkspaceWidget.qml`, `workspace-plugin/`, `plugin.json` |
+| Compositor and host boundaries   | `NiriState.qml`, `NavigationHost.qml`, `BarGeometry.qml`                                                    |
+| Window navigation                | `WindowStrip.qml`, `NavigationButton.qml`, `WindowModel.js`, `ReorderModel.js`                              |
+| Standalone window sidebar        | `SidebarDaemon.qml`, `SidebarPanel.qml`, `SidebarView.qml`, `SidebarModel.js`                               |
+| Workspace navigation             | `WorkspaceRail.qml`, `WorkspaceButton.qml`, `WorkspaceIconMenu.qml`, `WorkspaceModel.js`                    |
+| Shared model updates             | `ModelUtils.js`                                                                                             |
+| Session state and favicon bridge | `state/`, `BrowserModel.js`, `scripts/tabctl-favicons.py`                                                   |
+| Tooling and regression tests     | `.devcontainer/`, `scripts/`, `tests/`, `Makefile`                                                          |
 
 [Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records this refactor. [Agent guidance](AGENTS.md) sets maintenance boundaries. Git history retains earlier implementation notes.

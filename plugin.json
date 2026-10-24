@@ -1,13 +1,16 @@
 {
   "id": "justinNavigation",
-  "name": "Justin Navigation",
-  "description": "Output-scoped window tabs and a scrolling workspace icon rail for Niri, inspired by Material Shell.",
-  "version": "0.5.0",
+  "name": "Justin Window Tabs",
+  "description": "Output-scoped Niri window tabs for DMS bars and configurable sidebars.",
+  "version": "0.7.0",
   "author": "Justin",
-  "type": "widget",
-  "capabilities": ["dankbar-widget"],
-  "component": "./NavigationWidget.qml",
+  "type": "composite",
+  "capabilities": ["dankbar-widget", "daemon"],
+  "components": {
+    "widget": "./NavigationWidget.qml",
+    "daemon": "./SidebarDaemon.qml"
+  },
   "settings": "./NavigationSettings.qml",
-  "icon": "view_sidebar",
+  "icon": "tab",
   "permissions": ["settings_read", "settings_write"]
 }

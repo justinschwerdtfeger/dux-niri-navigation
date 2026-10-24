@@ -3,17 +3,27 @@ set -euo pipefail
 
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 plugin_parent="${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins"
-plugin_destination="$plugin_parent/JustinNavigation"
+sources=("$repo_dir" "$repo_dir/workspace-plugin")
+names=(JustinNavigation JustinWorkspaces)
 
-if [[ -L "$plugin_destination" ]] && [[ "$(readlink -f -- "$plugin_destination")" == "$repo_dir" ]]; then
-    printf 'Plugin is already linked: %s\n' "$plugin_destination"
-    exit 0
-fi
-if [[ -e "$plugin_destination" || -L "$plugin_destination" ]]; then
-    printf 'Refusing to replace existing path: %s\n' "$plugin_destination" >&2
-    exit 1
-fi
+# Validate every destination before creating either link.
+for index in "${!names[@]}"; do
+    destination="$plugin_parent/${names[$index]}"
+    if [[ -L "$destination" ]] && [[ "$(readlink -f -- "$destination")" == "${sources[$index]}" ]]; then
+        continue
+    fi
+    if [[ -e "$destination" || -L "$destination" ]]; then
+        printf 'Refusing to replace existing path: %s\n' "$destination" >&2
+        exit 1
+    fi
+done
 
 mkdir -p -- "$plugin_parent"
-ln -s -- "$repo_dir" "$plugin_destination"
-printf 'Linked plugin: %s\nNext: DMS Settings → Plugins → Scan, then enable Justin Navigation and add it to your bar.\n' "$plugin_destination"
+for index in "${!names[@]}"; do
+    destination="$plugin_parent/${names[$index]}"
+    if [[ ! -L "$destination" ]]; then
+        ln -s -- "${sources[$index]}" "$destination"
+    fi
+    printf 'Plugin linked: %s\n' "$destination"
+done
+printf 'Next: DMS Settings → Plugins → Scan, then enable Justin Window Tabs and Justin Workspaces.\n'

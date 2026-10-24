@@ -3,6 +3,19 @@ const assert = require('node:assert/strict');
 const { loadModel, plain } = require('./helpers.cjs');
 const model = loadModel('WindowModel.js');
 const workspace = { id: 10, output: 'DP-1', is_active: true, active_window_id: 2 };
+
+test('compact vertical tabs have stable square lengths and correct gaps', () => {
+    assert.deepEqual(plain(model.compactTabGeometry(0, 4, 36)), {
+        widths: [],
+        starts: [],
+        totalWidth: 0,
+    });
+    assert.deepEqual(plain(model.compactTabGeometry(3, 4, 36)), {
+        widths: [36, 36, 36],
+        starts: [0, 40, 80],
+        totalWidth: 116,
+    });
+});
 const window = (id, column, row = 1, changes = {}) => ({
     id,
     workspace_id: 10,

@@ -1,5 +1,47 @@
 # Desktop compatibility audit — 2026-09-30
 
+## Temporary sidebar validation — 2026-10-10
+
+With explicit user authorization, temporarily changed only Window Tabs’ sidebar
+settings on DP-2 to test pinned left/right and expandable overlay/push modes at
+240 px. Restarted the existing `dms.service` to load the file edits; DMS 1.6.2’s
+plugin-settings file watcher does not reparse these external edits automatically.
+The plugin's normal GUI settings use reactive in-memory settings.
+
+Niri confirmed one sidebar layer on DP-2, the expected 48/240 px reservations,
+unchanged eDP-1 window width, and restoration of baseline window sizes when Off.
+The sidebar is now Off, its layer is gone, and parsed plugin settings exactly
+match the original backup. No bar layout settings were edited. The definitive
+backup is
+`/var/home/justin/.config/DankMaterialShell/backups/before-sidebar-validation-20261010-212046/`.
+An earlier attempt that did not activate a panel also restored its settings.
+Visual interaction acceptance remains separate; see [Review](REVIEW.md).
+
+## Navigation plugin split migration — 2026-10-10
+
+With explicit user authorization, installed the `JustinWorkspaces` link to this
+checkout's `workspace-plugin/` and enabled `justinWorkspaces`. Replaced only
+`bar1790798483722` (Bar 2)'s first `leftWidgets` entry from `justinNavigation` to
+`justinWorkspaces`. The top bar retains `justinNavigation` and its window settings.
+Parsed settings comparisons against the backup confirm exactly this widget-ID
+change and the new plugin's `enabled: true` setting, with no other saved preference
+changes.
+
+Stopped the existing `dms.service` while atomically updating the two settings
+files, then started that same service. Both plugins report loaded and registered
+as visible; logs show each entry loading on both monitors without plugin QML
+errors. The user confirmed that the top tabs and left workspace rail look and
+behave as before. Horizontal workspaces and vertical tab display modes still need
+visible acceptance.
+
+Original `settings.json` and `plugin_settings.json` are backed up at
+`/var/home/justin/.config/DankMaterialShell/backups/before-plugin-split-20261010-204256/`.
+For rollback, stop DMS before restoring settings. Prefer reverting the recorded
+widget/enable changes rather than overwriting later preferences. The new install
+link can be removed after disabling/removing Workspaces; keep the root checkout
+and Window Tabs link. This is an authorized migration record, not an automatic
+repository setup step.
+
 ## TabCtl favicon event fix — 2026-10-10
 
 With explicit user authorization, patched the separate project at

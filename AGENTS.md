@@ -6,10 +6,11 @@ Read `README.md`, `docs/DESIGN.md`, and `docs/DEVELOPMENT.md` before changing be
 
 ## Product contracts
 
-- This is a DMS plugin for Niri: window icons/titles on horizontal bars and workspace icons on vertical bars. Preserve the established visual style while fixing usability, bugs, and DMS inconsistencies.
+- This repository provides independent DMS Window Tabs and Workspaces plugins for Niri. Both support horizontal and vertical bars. Vertical tab titles are optional; preserve the established visual style while fixing usability, bugs, and DMS inconsistencies.
+- Window Tabs also supports an optional standalone sidebar through its composite daemon surface. Keep it disabled by default, reuse the tab view/state, and distinguish panel width from reserved width in expandable overlay mode. Hold hover opening/closing during interaction and acknowledgment.
 - Scope both lists to the hosting output. Include its trailing empty workspace. Use live Niri IDs for identity and workspace indices only for order; IDs are not persistent across compositor sessions.
 - Keep unnamed dynamic workspaces. Icon choices must never name or retain them. Persist favorite symbols only; assignments are session-local and disappear with their workspaces.
-- Window tabs show exact titles without an app-name label; floating windows are excluded. Use a stable monitor-based width scale and an individual readability minimum. Never normalize by the list or smallest window; retain those regressions.
+- Window tabs show exact titles without an app-name label when titles are enabled; floating windows are excluded. Horizontal/rotated tabs use a stable monitor-based width scale and an individual readability minimum; vertical icons/title rows use compact uniform lengths. Never normalize by the list or smallest window; retain those regressions.
 - Reuse DMS’s launcher, theme, settings, icons, and tooltips. A launch can activate an existing window. Do not add a compositor fork, complete shell, persistent workspace model, or browser tab-detaching extension without an explicit scope change.
 
 ## Implementation

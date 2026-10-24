@@ -14,6 +14,16 @@ Item {
     property var workspaceId: null
     property bool available: false
     property bool reorderBusy: false
+    property bool vertical: false
+    property string verticalDisplay: "icons"
+    property bool showTitles: !vertical || verticalDisplay !== "icons"
+    property real titleOpacity: 1
+    // Standalone sidebars keep row/icon geometry independent of panel width.
+    // Zero retains ordinary bar sizing.
+    property real verticalRowHeight: 0
+    property int tabIconSize: 0
+    readonly property bool rotatedTabs: vertical && verticalDisplay === "rotated"
+    readonly property bool compactTabs: vertical && !rotatedTabs
     property real maximumWidth: 640
     property real buttonHeight: 30
     property real referenceWidth: 1920
@@ -21,11 +31,15 @@ Item {
     property var parentScreen: null
     property string barEdge: "top"
     property real barSpacing: 0
+    property real barThickness: buttonHeight
     property bool reverseScroll: false
     property var tooltipAnchor: null
     readonly property DankTooltip activeTooltip: tooltipLoader.item as DankTooltip
     readonly property real gap: Theme.spacingXS
     readonly property var tabLayout: {
+        if (compactTabs) {
+            return WindowModel.compactTabGeometry(windows.length, gap, controlWidth);
+        }
         const minimum = Math.max(96, (buttonHeight + 24) * 1.5);
         return WindowModel.tabGeometry(windows, gap, minimum, referenceWidth, preferredTabWidth);
     }
@@ -43,7 +57,13 @@ Item {
         }
     }
 
-    readonly property real controlWidth: buttonHeight
+    readonly property real controlWidth: {
+        if (compactTabs && verticalRowHeight > 0)
+            return verticalRowHeight;
+        if (vertical && verticalDisplay === "titles")
+            return Math.min(buttonHeight, Theme.fontSizeSmall + 24);
+        return buttonHeight;
+    }
     readonly property var stripLayout: WindowModel.stripGeometry(animatedContentWidth, maximumWidth, controlWidth, gap)
     // During growth, compare against the same animated demand used to size
     // the strip; the final tab width would briefly look like overflow.
@@ -51,7 +71,7 @@ Item {
     // The host may still assign less width than our implicit request.
     readonly property bool showArrows: {
         const demand = Math.min(animatedContentWidth, tabLayout.totalWidth);
-        return WindowModel.stripGeometry(demand, width, controlWidth, gap).showArrows;
+        return WindowModel.stripGeometry(demand, vertical ? height : width, controlWidth, gap).showArrows;
     }
     readonly property int activeIndex: windows.findIndex(window => window.active)
     readonly property var activeWindowId: activeIndex >= 0 ? windows[activeIndex].id : null
@@ -91,6 +111,10 @@ Item {
     property var dragIds: []
     property real dragPointerX: 0
     property real dragPointerY: 0
+    readonly property real dragPointerPosition: vertical ? dragPointerY : dragPointerX
+    readonly property real dragCrossPosition: vertical ? dragPointerX : dragPointerY
+    readonly property real viewportLength: vertical ? viewport.height : viewport.width
+    readonly property real scrollOffset: vertical ? viewport.contentY : viewport.contentX
     property real dragGrabOffset: 0
     property var dragTarget: null
     property var pressedTabAnchor: null
@@ -121,7 +145,8 @@ Item {
         viewport.cancelFlick();
         followActive = false;
         const pos = mapFromItem(null, sceneX, sceneY);
-        dragGrabOffset = pos.x - anchor.mapToItem(strip, 0, 0).x;
+        const origin = anchor.parent.mapToItem(strip, 0, 0);
+        dragGrabOffset = vertical ? pos.y - origin.y : pos.x - origin.x;
         dragAnchor = anchor;
         dragWindowId = windowId;
         dragIds = windows.map(window => window.id);
@@ -129,8 +154,8 @@ Item {
     }
 
     function updateDragTarget() {
-        dragTarget = WindowModel.tabDropTarget(windows, tabLayout, dragWindowId, dragPointerX - dragGrabOffset
-                                               + viewport.contentX);
+        dragTarget = WindowModel.tabDropTarget(windows, tabLayout, dragWindowId, dragPointerPosition - dragGrabOffset
+                                               + scrollOffset);
     }
 
     function moveTabDrag(anchor, sceneX, sceneY) {
@@ -148,8 +173,8 @@ Item {
         moveTabDrag(anchor, sceneX, sceneY);
         const sourceId = dragWindowId;
         const target = dragTarget;
-        const insideX = dragPointerX >= 0 && dragPointerX <= viewport.width;
-        const inside = insideX && dragPointerY >= 0 && dragPointerY <= buttonHeight;
+        const insidePrimary = dragPointerPosition >= 0 && dragPointerPosition <= viewportLength;
+        const inside = insidePrimary && dragCrossPosition >= 0 && dragCrossPosition <= buttonHeight;
         // Keep the gap in place while Niri confirms the actual reorder.
         droppedPreview = inside && target ? {
                                                 sourceId: sourceId,
@@ -167,13 +192,14 @@ Item {
         repeat: true
         running: strip.dragWindowId !== null
         onTriggered: {
-            if (strip.dragPointerY < 0 || strip.dragPointerY > strip.buttonHeight)
+            if (strip.dragCrossPosition < 0 || strip.dragCrossPosition > strip.buttonHeight)
                 return;
-            const step = strip.dragPointerX < 28 ? -8 : strip.dragPointerX > viewport.width - 28 ? 8 : 0;
+            const step = strip.dragPointerPosition < 28 ? -8 : strip.dragPointerPosition > strip.viewportLength - 28 ? 8 :
+                                                                                                                       0;
             if (!step)
                 return;
-            viewport.contentX = WindowModel.scrollPosition(strip.tabLayout, -1, viewport.contentX + step, viewport.width,
-                                                           false);
+            strip.setScrollOffset(WindowModel.scrollPosition(strip.tabLayout, -1, strip.scrollOffset + step,
+                                                             strip.viewportLength, false));
             strip.updateDragTarget();
         }
     }
@@ -275,8 +301,8 @@ Item {
         onWheel: wheel => strip.handleWheel(wheel)
     }
 
-    implicitHeight: buttonHeight
-    implicitWidth: stripLayout.width
+    implicitHeight: vertical ? stripLayout.width : buttonHeight
+    implicitWidth: vertical ? buttonHeight : stripLayout.width
     width: implicitWidth
     height: implicitHeight
     clip: true
@@ -290,8 +316,16 @@ Item {
         if (!activeTooltip)
             return;
         // Use the same screen-local anchor and panel tooltip as DMS RunningApps.
-        const pos = anchor.mapToItem(null, anchor.width / 2, anchor.height);
         activeTooltip.text = anchor.tooltip;
+        if (vertical) {
+            const center = anchor.mapToItem(null, anchor.width / 2, anchor.height / 2);
+            const left = barEdge !== "right";
+            const inset = barThickness + barSpacing + gap;
+            const tooltipX = left ? inset : parentScreen.width - inset;
+            activeTooltip.show(anchor.tooltip, tooltipX, center.y, parentScreen, left, !left);
+            return;
+        }
+        const pos = anchor.mapToItem(null, anchor.width / 2, anchor.height);
         const tooltipY = barEdge === "bottom" ? parentScreen.height - buttonHeight - barSpacing - gap
                                                 - activeTooltip.implicitHeight : buttonHeight + barSpacing + gap;
         activeTooltip.show(anchor.tooltip, pos.x, tooltipY, parentScreen, false, false);
@@ -330,12 +364,36 @@ Item {
         };
     }
 
+    function setScrollOffset(offset) {
+        if (vertical)
+            viewport.contentY = offset;
+        else
+            viewport.contentX = offset;
+    }
+
+    function resetOrientation() {
+        hideTooltip(null);
+        cancelTabDrag();
+        droppedPreview = null;
+        followActive = true;
+        wheelState = {
+            axis: "",
+            source: "",
+            value: 0
+        };
+        viewport.contentX = 0;
+        viewport.contentY = 0;
+        Qt.callLater(revealActive);
+    }
+    onVerticalChanged: resetOrientation()
+    onVerticalDisplayChanged: resetOrientation()
+
     function scrollBy(amount) {
         hideTooltip(null);
         followActive = false;
         viewport.cancelFlick();
-        viewport.contentX = WindowModel.scrollPosition(tabLayout, activeIndex, viewport.contentX + amount, viewport.width,
-                                                       false);
+        setScrollOffset(WindowModel.scrollPosition(tabLayout, activeIndex, scrollOffset + amount, viewportLength,
+                                                   false));
     }
 
     function revealActive() {
@@ -344,8 +402,8 @@ Item {
         // A new rightmost tab can be temporarily clipped while the strip
         // grows. Revealing it now would scroll existing tabs and then undo
         // that scroll on every frame. Clamp now, reveal when growth settles.
-        viewport.contentX = WindowModel.scrollPosition(tabLayout, activeIndex, viewport.contentX, viewport.width,
-                                                       followActive && animatedContentWidth >= tabLayout.totalWidth);
+        setScrollOffset(WindowModel.scrollPosition(tabLayout, activeIndex, scrollOffset, viewportLength, followActive
+                                                   && animatedContentWidth >= tabLayout.totalWidth));
     }
 
     onActiveWindowIdChanged: {
@@ -370,16 +428,17 @@ Item {
         visible: strip.windows.length > 0
         anchors.left: parent.left
         anchors.top: parent.top
-        anchors.right: controls.left
-        anchors.rightMargin: visible ? strip.gap : 0
-        height: strip.buttonHeight
-        contentWidth: strip.tabLayout.totalWidth
-        contentHeight: height
-        flickableDirection: Flickable.HorizontalFlick
+        readonly property real controlGap: visible ? strip.gap : 0
+        width: strip.vertical ? strip.buttonHeight : Math.max(0, strip.width - controls.width - controlGap)
+        height: strip.vertical ? Math.max(0, strip.height - controls.height - controlGap) : strip.buttonHeight
+        contentWidth: strip.vertical ? width : strip.tabLayout.totalWidth
+        contentHeight: strip.vertical ? strip.tabLayout.totalWidth : height
+        flickableDirection: strip.vertical ? Flickable.VerticalFlick : Flickable.HorizontalFlick
         interactive: strip.dragWindowId === null
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         onWidthChanged: Qt.callLater(strip.revealActive)
+        onHeightChanged: Qt.callLater(strip.revealActive)
         onMovementStarted: strip.hideTooltip(null)
         onDraggingChanged: {
             if (dragging) {
@@ -389,11 +448,10 @@ Item {
         }
         onMovementEnded: Qt.callLater(strip.revealActive)
 
-        Row {
+        Grid {
+            y: strip.tabOffset
+            columns: strip.vertical ? 1 : Math.max(1, tabs.count)
             spacing: strip.gap
-            transform: Translate {
-                y: strip.tabOffset
-            }
 
             Repeater {
                 model: tabs
@@ -407,19 +465,24 @@ Item {
                     required property bool urgent
                     required property real tabWidth
                     required property int index
-                    width: tabWidth
-                    height: strip.buttonHeight
+                    width: strip.vertical ? strip.buttonHeight : tabWidth
+                    height: strip.vertical ? tabWidth : strip.buttonHeight
                     z: strip.dragWindowId === windowId || strip.droppedPreview?.sourceId === windowId ? 1 : 0
-                    // Animate one absolute position per tab. Animating Row.x and
+                    // Animate one absolute position per tab. Animating layout and
                     // a preview offset separately caused jumps on layout acknowledgment.
-                    property real visualX: strip.dragWindowId === windowId ? strip.dragPointerX - strip.dragGrabOffset
-                                                                             + viewport.contentX : (
-                                                                                 strip.tabVisualPositions[windowId]
-                                                                                 ?? x)
+                    property real visualPosition: {
+                        if (strip.dragWindowId === windowId)
+                            return strip.dragPointerPosition - strip.dragGrabOffset + strip.scrollOffset;
+                        return strip.tabVisualPositions[windowId] ?? (strip.vertical ? y : x);
+                    }
+                    transform: Translate {
+                        x: strip.vertical ? 0 : tab.visualPosition - tab.x
+                        y: strip.vertical ? tab.visualPosition - tab.y : 0
+                    }
                     property real entranceOpacity: 0
                     opacity: entranceOpacity
                     Component.onCompleted: entranceOpacity = 1
-                    Behavior on visualX {
+                    Behavior on visualPosition {
                         enabled: strip.animationReady && !Theme.snapListModelChanges && strip.dragWindowId
                                  !== tab.windowId
                         NumberAnimation {
@@ -437,7 +500,13 @@ Item {
 
                     NavigationButton {
                         id: tabButton
-                        anchors.fill: parent
+                        anchors.centerIn: parent
+                        width: strip.rotatedTabs ? tab.height : tab.width
+                        height: strip.rotatedTabs ? tab.width : tab.height
+                        rotation: strip.rotatedTabs ? (strip.barEdge === "right" ? -90 : 90) : 0
+                        showText: strip.showTitles
+                        textOpacity: strip.titleOpacity
+                        iconSize: strip.tabIconSize
                         appId: tab.appId
                         faviconSource: strip.faviconSources[tab.windowId] ?? ""
                         showAppIcon: true
@@ -446,9 +515,6 @@ Item {
                         opaqueBackground: strip.pressedTabAnchor === tabButton || strip.dragWindowId === tab.windowId
                                           || strip.droppedPreview?.sourceId === tab.windowId
                         dragEnabled: strip.available && !strip.reorderBusy
-                        transform: Translate {
-                            x: tab.visualX - tab.x
-                        }
                         text: tab.title
                         selected: tab.active
                         urgent: tab.urgent
@@ -474,39 +540,40 @@ Item {
         }
     }
 
-    Row {
+    Grid {
         id: controls
-        anchors.right: parent.right
-        anchors.top: parent.top
+        columns: strip.vertical ? 1 : 3
+        x: strip.vertical ? 0 : strip.width - width
+        y: strip.vertical ? strip.height - height : 0
         spacing: strip.gap
 
         NavigationButton {
-            width: strip.controlWidth
-            height: strip.buttonHeight
+            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
+            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
             visible: strip.showArrows
             onTooltipRequested: anchor => strip.showTooltip(anchor)
             onTooltipDismissed: anchor => strip.hideTooltip(anchor)
-            text: "‹"
+            text: strip.vertical ? "↑" : "‹"
             tooltip: "Earlier windows"
-            enabled: viewport.contentX > 0
-            onClicked: strip.scrollBy(-viewport.width * 0.8)
+            enabled: strip.scrollOffset > 0
+            onClicked: strip.scrollBy(-strip.viewportLength * 0.8)
         }
 
         NavigationButton {
-            width: strip.controlWidth
-            height: strip.buttonHeight
+            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
+            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
             visible: strip.showArrows
             onTooltipRequested: anchor => strip.showTooltip(anchor)
             onTooltipDismissed: anchor => strip.hideTooltip(anchor)
-            text: "›"
+            text: strip.vertical ? "↓" : "›"
             tooltip: "Later windows"
-            enabled: viewport.contentX < viewport.contentWidth - viewport.width
-            onClicked: strip.scrollBy(viewport.width * 0.8)
+            enabled: strip.scrollOffset < strip.tabLayout.totalWidth - strip.viewportLength
+            onClicked: strip.scrollBy(strip.viewportLength * 0.8)
         }
 
         NavigationButton {
-            width: strip.controlWidth
-            height: strip.buttonHeight
+            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
+            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
             onTooltipRequested: anchor => strip.showTooltip(anchor)
             onTooltipDismissed: anchor => strip.hideTooltip(anchor)
             text: "+"

@@ -11,12 +11,14 @@ Item {
     property var assignments: ({})
     readonly property var activeWorkspaceId: workspaces.find(ws => ws.is_active)?.id ?? null
     property bool available: false
+    property bool vertical: true
     property real buttonSize: 36
     property real maximumHeight: 600
+    property real maximumWidth: 600
     signal workspaceActivated(var workspaceId)
     signal iconMenuRequested(var workspaceId, var anchor)
-    implicitWidth: buttonSize
-    implicitHeight: Math.min(Math.max(0, maximumHeight), list.contentHeight)
+    implicitWidth: vertical ? buttonSize : Math.min(Math.max(0, maximumWidth), list.contentWidth)
+    implicitHeight: vertical ? Math.min(Math.max(0, maximumHeight), list.contentHeight) : buttonSize
     ListModel {
         id: workspaceRows
     }
@@ -33,9 +35,15 @@ Item {
         anchors.fill: parent
         clip: true
         model: workspaceRows
+        orientation: rail.vertical ? ListView.Vertical : ListView.Horizontal
         spacing: Theme.spacingXS
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: DankScrollbar {}
+        ScrollBar.vertical: DankScrollbar {
+            visible: rail.vertical && list.contentHeight > list.height
+        }
+        ScrollBar.horizontal: DankScrollbar {
+            visible: !rail.vertical && list.contentWidth > list.width
+        }
         delegate: WorkspaceButton {
             required property var workspaceId
             required property int workspaceIndex
@@ -57,6 +65,8 @@ Item {
         }
         onCountChanged: Qt.callLater(revealActive)
         onHeightChanged: Qt.callLater(revealActive)
+        onWidthChanged: Qt.callLater(revealActive)
+        onOrientationChanged: Qt.callLater(revealActive)
     }
     onWorkspacesChanged: syncModel()
     onActiveWorkspaceIdChanged: Qt.callLater(list.revealActive)

@@ -30,7 +30,13 @@ def tool(name):
 
 
 def run(action):
-    files = sorted([*ROOT.glob("*.qml"), *(ROOT / "state").glob("*.qml")])
+    files = sorted(
+        [
+            *ROOT.glob("*.qml"),
+            *(ROOT / "state").glob("*.qml"),
+            *(ROOT / "workspace-plugin").glob("*.qml"),
+        ]
+    )
     if action == "lint":
         imports = ROOT / ".local/dms-tooling/imports"
         if not (imports / "qs/Modules/Plugins/qmldir").is_file():

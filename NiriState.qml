@@ -12,11 +12,12 @@ QtObject {
     id: state
     property string outputName: ""
     property bool faviconsEnabled: true
+    property bool workspaceIconsEnabled: true
     readonly property bool available: CompositorService.isNiri
     readonly property var windows: available ? NiriService.windows : []
     readonly property var workspaces: available ? NiriService.allWorkspaces : []
     readonly property var outputWorkspaces: WorkspaceModel.outputWorkspaces(workspaces, outputName)
-    readonly property var workspaceIcons: Session.WorkspaceIcons.assignments
+    readonly property var workspaceIcons: workspaceIconsEnabled ? Session.WorkspaceIcons.assignments : ({})
     readonly property var activeWorkspace: WindowModel.activeWorkspace(workspaces, outputName)
     readonly property var currentWindows: WindowModel.workspaceWindows(windows, activeWorkspace)
     readonly property var faviconSources: available && faviconsEnabled ? BrowserModel.faviconSources(windows,
@@ -30,7 +31,8 @@ QtObject {
     }
 
     function syncWorkspaceIcons() {
-        Session.WorkspaceIcons.sync(workspaces, windows);
+        if (workspaceIconsEnabled)
+            Session.WorkspaceIcons.sync(workspaces, windows);
     }
     Component.onCompleted: syncWorkspaceIcons()
     onWorkspacesChanged: Qt.callLater(syncWorkspaceIcons)
@@ -88,7 +90,7 @@ QtObject {
     }
 
     function setWorkspaceIcon(workspaceId, icon) {
-        if (available && WorkspaceModel.canFocus(workspaces, outputName, workspaceId))
+        if (available && workspaceIconsEnabled && WorkspaceModel.canFocus(workspaces, outputName, workspaceId))
             Session.WorkspaceIcons.setIcon(workspaceId, icon);
     }
 

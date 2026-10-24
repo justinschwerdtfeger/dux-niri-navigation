@@ -25,8 +25,13 @@ Item {
         available: true
         property int activations: 0
         property int closes: 0
+        property var reorderRequest: null
         onWindowActivated: activations++
         onWindowCloseRequested: closes++
+        onWindowReorderRequested: (source, target, after) => {
+            reorderRequest = [source, target, after];
+            reorderBusy = true;
+        }
     }
 
     Plugin.WorkspaceRail {
@@ -35,6 +40,8 @@ Item {
         available: true
         maximumHeight: 72
         buttonSize: 36
+        property var pickerRequest: null
+        onIconMenuRequested: (workspaceId, anchor) => pickerRequest = [workspaceId, anchor]
     }
 
     function descendants(item, predicate) {
@@ -100,6 +107,16 @@ Item {
             NiriService.windows = suite.windows();
             adapter.cancelReorder();
             adapter.outputName = "DP-1";
+            strip.vertical = false;
+            strip.verticalDisplay = "icons";
+            strip.maximumWidth = 900;
+            strip.buttonHeight = 36;
+            strip.reorderBusy = false;
+            strip.reorderRequest = null;
+            strip.barEdge = "top";
+            rail.vertical = true;
+            rail.maximumWidth = 600;
+            rail.pickerRequest = null;
             strip.windows = [
                         {
                             id: 1,
@@ -234,6 +251,111 @@ Item {
             strip.droppedPreview = null;
             wait(130);
             verify(first.mapToItem(strip, 0, 0).x > second.mapToItem(strip, 0, 0).x);
+        }
+
+        function test_vertical_modes_and_drag_data() {
+            return [
+                        {
+                            tag: "icons",
+                            display: "icons"
+                        },
+                        {
+                            tag: "titles",
+                            display: "titles"
+                        },
+                        {
+                            tag: "titles-wide",
+                            display: "titles",
+                            crossSize: 180
+                        },
+                        {
+                            tag: "rotated",
+                            display: "rotated"
+                        }
+                    ];
+        }
+
+        function test_vertical_modes_and_drag(data) {
+            strip.buttonHeight = data.crossSize ?? 36;
+            strip.verticalDisplay = data.display;
+            strip.vertical = true;
+            wait(30);
+            const buttons = suite.tabButtons();
+            const first = buttons[0];
+            const second = buttons[1];
+            compare(strip.width, strip.buttonHeight);
+            compare(first.showText, data.display !== "icons");
+            compare(first.rotation, data.display === "rotated" ? 90 : 0);
+            compare(first.parent.width, strip.buttonHeight);
+            verify(first.parent.height > 0);
+            if (data.crossSize)
+                verify(first.parent.height <= 36, "wide bars should retain compact title rows");
+            verify(second.parent.y > first.parent.y);
+            // Grab the visible wrapper center; rotated local origins differ.
+            const point = first.parent.mapToItem(null, first.parent.width / 2, first.parent.height / 2);
+            strip.startTabDrag(first, 1, point.x, point.y);
+            const distance = strip.tabLayout.starts[1];
+            strip.moveTabDrag(first, point.x, point.y + distance);
+            compare(strip.dragTarget.targetId, 2);
+            compare(strip.dragTarget.after, true);
+            strip.finishTabDrag(first, point.x, point.y + distance);
+            compare(strip.reorderRequest[0], 1);
+            compare(strip.reorderRequest[1], 2);
+            compare(strip.reorderRequest[2], true);
+            verify(strip.droppedPreview !== null);
+            strip.windows = [strip.windows[1], strip.windows[0]];
+            wait(30);
+            verify(first.parent.mapToItem(strip, 0, 0).y > second.parent.mapToItem(strip, 0, 0).y);
+            strip.reorderBusy = false;
+            strip.barEdge = "right";
+            compare(first.rotation, data.display === "rotated" ? -90 : 0);
+            strip.vertical = false;
+            wait(30);
+            compare(first.rotation, 0);
+            compare(first.showText, true);
+            compare(strip.height, strip.buttonHeight);
+        }
+
+        function test_vertical_overflow_and_empty_launcher() {
+            strip.vertical = true;
+            strip.maximumWidth = 180;
+            strip.windows = [1, 2, 3, 4, 5].map(id => ({
+                id: id,
+                title: String(id),
+                appId: ""
+            }));
+            wait(30);
+            verify(strip.showArrows);
+            compare(strip.height, 180);
+            strip.scrollBy(40);
+            compare(strip.scrollOffset, 40);
+            strip.windows = strip.windows.map(window => Object.assign({}, window, {
+                                                                          title: "Updated"
+                                                                      }));
+            wait(30);
+            compare(strip.scrollOffset, 40, "unchanged IDs preserve manual overflow browsing");
+            strip.windows = [];
+            wait(30);
+            compare(strip.height, strip.buttonHeight);
+            verify(!strip.showArrows);
+        }
+
+        function test_horizontal_workspaces_preserve_buttons_and_picker_anchor() {
+            rail.vertical = false;
+            rail.maximumWidth = 60;
+            wait(30);
+            compare(rail.implicitHeight, rail.buttonSize);
+            compare(rail.implicitWidth, 60);
+            const after = suite.descendants(rail, item => "workspaceId" in item);
+            rail.workspaces = rail.workspaces.map(ws => Object.assign({}, ws));
+            wait(30);
+            const updated = suite.descendants(rail, item => "workspaceId" in item);
+            compare(updated[0], after[0]);
+            compare(updated[1], after[1]);
+            verify(after[1].mapToItem(rail, 0, 0).x > after[0].mapToItem(rail, 0, 0).x);
+            mouseClick(after[0], 18, 18, Qt.RightButton);
+            compare(rail.pickerRequest[0], 10);
+            compare(rail.pickerRequest[1], after[0]);
         }
     }
 }

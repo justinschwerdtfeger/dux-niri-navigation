@@ -11,11 +11,16 @@ Rectangle {
     property string appId: ""
     property string faviconSource: ""
     property bool showAppIcon: false
+    property bool showText: true
+    property real textOpacity: 1
+    // Zero uses the available button geometry.
+    property int iconSize: 0
     readonly property var desktopEntry: showAppIcon && appId ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId)) :
                                                                null
     readonly property string applicationName: showAppIcon && appId ? Paths.getAppName(appId, desktopEntry) : ""
     readonly property string iconSource: showAppIcon ? Paths.getAppIcon(appId, desktopEntry) : ""
-    readonly property int appIconSize: Math.max(12, Math.floor(Math.min(height - 6, width - 8) * 0.85))
+    readonly property int appIconSize: iconSize > 0 ? iconSize : Math.max(12, Math.floor(Math.min(height - 6, width
+                                                                                                  - 8) * 0.85))
     // Favicons often fill their image bounds more densely than desktop icons.
     readonly property int faviconSize: Math.max(1, Math.floor(appIconSize * 0.85))
     property bool selected: false
@@ -118,8 +123,7 @@ Rectangle {
     // prefix handling conflicts with Quickshell's image://icon provider URLs.
     Item {
         id: iconSlot
-        anchors.left: parent.left
-        anchors.leftMargin: 6
+        x: button.showText ? 6 : (button.width - width) / 2
         anchors.verticalCenter: parent.verticalCenter
         width: button.appIconSize
         height: button.appIconSize
@@ -161,6 +165,8 @@ Rectangle {
     }
 
     StyledText {
+        visible: button.showText
+        opacity: button.textOpacity
         anchors.fill: parent
         anchors.margins: Math.min(4, button.height / 8)
         anchors.leftMargin: button.showAppIcon ? button.appIconSize + 12 : Math.min(4, button.height / 8)

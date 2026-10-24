@@ -1,0 +1,13 @@
+{
+  "id": "justinWorkspaces",
+  "name": "Justin Workspaces",
+  "description": "Output-scoped Niri workspace icons for horizontal or vertical DMS bars.",
+  "version": "0.6.0",
+  "author": "Justin",
+  "type": "widget",
+  "capabilities": ["dankbar-widget"],
+  "component": "./Widget.qml",
+  "settings": "./Settings.qml",
+  "icon": "view_week",
+  "permissions": ["settings_read", "settings_write"]
+}
