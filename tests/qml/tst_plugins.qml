@@ -200,9 +200,11 @@ Item {
                 edge: "left"
             };
             workspaces.pluginData = {};
+            workspaces.enabled = true;
             workspaces.widgetThickness = 36;
             workspaces.barThickness = 48;
             workspaces.barConfig = null;
+            workspaces.backgroundPressCount = 0;
             settings.writes = [];
             wait(30);
         }
@@ -354,11 +356,12 @@ Item {
         function test_workspace_edges_remain_clickable_with_inset_data() {
             const rows = [];
             for (const edge of ["top", "bottom", "left", "right"]) {
-                for (const thickness of [26, 36])
+                for (const sizes of [[26, 48], [36, 48], [25, 48], [26.4, 48], [27.2, 48], [26.4, 47.2]])
                     rows.push({
-                                  tag: edge + "-" + thickness,
+                                  tag: edge + "-" + sizes.join("-"),
                                   edge: edge,
-                                  thickness: thickness
+                                  thickness: sizes[0],
+                                  barThickness: sizes[1]
                               });
             }
             return rows;
@@ -384,8 +387,9 @@ Item {
                 edge: data.edge
             };
             workspaces.widgetThickness = data.thickness;
+            workspaces.barThickness = data.barThickness;
             workspaces.barConfig = {
-                widgetInset: (48 - data.thickness) / 2
+                widgetInset: (data.barThickness - data.thickness) / 2
             };
             wait(30);
             const buttons = suite.descendants(workspaces, item => "workspaceId" in item);
@@ -406,6 +410,7 @@ Item {
                 compare(NiriService.requests.length, 1, "right click must not switch workspaces");
                 popout.close();
             }
+            compare(workspaces.backgroundPressCount, 0, "workspace edge clicks must reach the button before the host");
             compare(vertical ? button.width : button.height, data.thickness,
                     "full-thickness input must not enlarge the visible button");
             const firstEnd = buttons[0].mapToItem(workspaces, buttons[0].width, buttons[0].height);
@@ -418,6 +423,33 @@ Item {
                                                  ? center.y : workspaces.barThickness + 1);
             mouseClick(suite, outside.x, outside.y, Qt.LeftButton);
             compare(NiriService.requests.length, 0, "hit targets stay within the bar thickness");
+            const beforeStart = workspaces.mapToItem(suite, vertical ? -1 : center.x, vertical ? center.y : -1);
+            mouseClick(suite, beforeStart.x, beforeStart.y, Qt.LeftButton);
+            compare(NiriService.requests.length, 0, "hit targets stay within the opposite bar edge");
+            workspaces.enabled = false;
+            for (const cross of [0, workspaces.barThickness - 1]) {
+                mouseClick(workspaces, vertical ? cross : center.x, vertical ? center.y : cross, Qt.LeftButton);
+                mouseClick(workspaces, vertical ? cross : center.x, vertical ? center.y : cross, Qt.RightButton);
+            }
+            compare(NiriService.requests.length, 0, "disabled inset targets cannot activate workspaces");
+            verify(!popout.visible, "disabled inset targets cannot open the picker");
+            workspaces.enabled = true;
+
+            // Resizing moves the centered ancestor loaders without replacing
+            // the row. Its input origin must track the actual new positions.
+            workspaces.widgetThickness = data.thickness + 0.4;
+            workspaces.barThickness = data.barThickness + 0.8;
+            wait(30);
+            const resizedCenter = button.mapToItem(workspaces, button.width / 2, button.height / 2);
+            for (const cross of [0, workspaces.barThickness - 1]) {
+                NiriService.requests = [];
+                mouseClick(workspaces, vertical ? cross : resizedCenter.x, vertical ? resizedCenter.y : cross,
+                           Qt.LeftButton);
+
+
+                compare(NiriService.requests.length, 1, "resizing must keep both inset edges clickable");
+                compare(NiriService.requests[0].Action.FocusWorkspace.reference.Id, 20);
+            }
             compare(suite.descendants(workspaces, item => "workspaceId" in item)[1], button);
         }
 

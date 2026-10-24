@@ -10,6 +10,17 @@ QtObject {
     required property real pillPadding
     property var pillHost: null
 
+    function contentCrossOffset(content) {
+        // Centered QML loaders round their positions. In particular, a
+        // fractional inset need not place content at (bar - widget) / 2.
+        // Read each position explicitly so this binding follows resizing and
+        // reparenting; mapToItem alone does not track ancestor positions.
+        let offset = 0;
+        for (let item = content; item && item !== widget; item = item.parent)
+            offset += vertical ? item.x : item.y;
+        return -offset;
+    }
+
     readonly property var host: findHost(widget)
     readonly property real availableWidth: vertical ? 0 : availablePrimarySize
     readonly property real availableHeight: vertical ? availablePrimarySize : 0

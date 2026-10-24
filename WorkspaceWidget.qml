@@ -77,12 +77,14 @@ NavigationHost {
 
     navigationContent: Component {
         WorkspaceRail {
+            id: workspaceRail
             vertical: navigation.isVertical
             workspaces: niri.outputWorkspaces
             assignments: niri.workspaceIcons
             available: niri.available
             buttonSize: navigation.widgetThickness
             crossAxisSize: Math.max(navigation.widgetThickness, navigation.barThickness)
+            crossAxisOffset: navigation.contentCrossOffset(workspaceRail)
             barStyle: navigation.barWidgetStyle
             iconSize: navigation.iconSize
             maximumWidth: navigation.primarySizeLimit

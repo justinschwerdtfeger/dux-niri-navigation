@@ -16,6 +16,7 @@ Item {
     property var pluginData: ({})
     property Component horizontalBarPill: null
     property Component verticalBarPill: null
+    property int backgroundPressCount: 0
     readonly property int iconSize: Theme.barIconSize(barThickness, -4, barConfig?.maximizeWidgetIcons, barConfig
                                                       ?.iconScale)
     readonly property int iconSizeLarge: Theme.barIconSize(barThickness, undefined, barConfig?.maximizeWidgetIcons,
@@ -37,11 +38,22 @@ Item {
         readonly property real visualHeight: widgetThickness
         width: visualWidth
         height: root.barThickness
-        Loader {
-            id: horizontalLoader
+        Item {
+            width: horizontalPill.visualWidth
+            height: horizontalPill.visualHeight
             anchors.centerIn: parent
-            active: !root.isVertical
-            sourceComponent: horizontalPill.content
+            Loader {
+                id: horizontalLoader
+                anchors.centerIn: parent
+                active: !root.isVertical
+                sourceComponent: horizontalPill.content
+            }
+        }
+        MouseArea {
+            anchors.fill: parent
+            z: -1
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onPressed: root.backgroundPressCount++
         }
     }
     Item {
@@ -56,11 +68,22 @@ Item {
         readonly property real visualHeight: (verticalLoader.item?.implicitHeight ?? 0) + horizontalPadding * 2
         width: root.barThickness
         height: visualHeight
-        Loader {
-            id: verticalLoader
+        Item {
+            width: verticalPill.visualWidth
+            height: verticalPill.visualHeight
             anchors.centerIn: parent
-            active: root.isVertical
-            sourceComponent: verticalPill.content
+            Loader {
+                id: verticalLoader
+                anchors.centerIn: parent
+                active: root.isVertical
+                sourceComponent: verticalPill.content
+            }
+        }
+        MouseArea {
+            anchors.fill: parent
+            z: -1
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onPressed: root.backgroundPressCount++
         }
     }
 }

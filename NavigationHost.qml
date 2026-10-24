@@ -60,6 +60,9 @@ PluginComponent {
         pillPadding: navigation.pillPadding
         pillHost: navigation.activePillHost
     }
+    function contentCrossOffset(content) {
+        return barGeometry.contentCrossOffset(content);
+    }
     // Bar primary size already excludes the host frame/inset margins.
     readonly property real primarySizeLimit: {
         const thickness = widgetThickness;

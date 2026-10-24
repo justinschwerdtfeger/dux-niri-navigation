@@ -15,6 +15,7 @@ Item {
     property real buttonSize: 36
     property real crossAxisSize: buttonSize
     readonly property real crossAxisPadding: Math.max(0, (crossAxisSize - buttonSize) / 2)
+    property real crossAxisOffset: -crossAxisPadding
     readonly property real buttonLength: Math.max(buttonSize, iconSize > 0 ? iconSize + 8 : 0)
     property int iconSize: 0
     property string barStyle: ""
@@ -37,8 +38,8 @@ Item {
     Component.onCompleted: syncModel()
     ListView {
         id: list
-        x: rail.vertical ? -rail.crossAxisPadding : 0
-        y: rail.vertical ? 0 : -rail.crossAxisPadding
+        x: rail.vertical ? rail.crossAxisOffset : 0
+        y: rail.vertical ? 0 : rail.crossAxisOffset
         width: rail.vertical ? rail.crossAxisSize : rail.width
         height: rail.vertical ? rail.height : rail.crossAxisSize
         clip: true
