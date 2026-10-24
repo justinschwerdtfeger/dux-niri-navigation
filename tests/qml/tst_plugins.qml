@@ -299,6 +299,97 @@ Item {
                     ];
         }
 
+        function test_padding_override_data() {
+            const rows = [];
+            for (const edge of ["top", "bottom", "left", "right"])
+                rows.push({
+                              tag: edge,
+                              edge: edge
+                          });
+            return rows;
+        }
+
+        function test_padding_override(data) {
+            const vertical = ["left", "right"].includes(data.edge);
+            for (const widget of [windows, workspaces]) {
+                widget.axis = {
+                    isVertical: vertical,
+                    edge: data.edge
+                };
+                const config = {
+                    widgetPadding: 6,
+                    widgetStyle: "rectangles",
+                    iconScale: 1.2
+                };
+                widget.barConfig = config;
+                wait(30);
+                const buttons = suite.descendants(widget, item => widget === windows ? "showAppIcon" in item :
+                                                                                       "workspaceId" in item);
+                verify(buttons.length > 0);
+                const button = buttons[0];
+                const primary = vertical ? "height" : "width";
+                const originalLength = widget[primary];
+                const inheritedPadding = widget.pillPadding;
+                widget.pluginData = {
+                    overridePadding: true,
+                    widgetPadding: 0
+                };
+                tryCompare(widget, "pillPadding", 0);
+                tryCompare(widget, primary, originalLength - inheritedPadding * 2);
+                for (const padding of [8, 24, 48]) {
+                    widget.pluginData = {
+                        overridePadding: true,
+                        widgetPadding: padding
+                    };
+                    tryCompare(widget, "pillPadding", padding);
+                    tryCompare(widget, primary, originalLength - inheritedPadding * 2 + padding * 2);
+                    compare(widget.activePillHost.barConfig.widgetStyle, config.widgetStyle);
+                    compare(widget.activePillHost.barConfig.iconScale, config.iconScale);
+                    compare(widget.activePillHost.widgetThickness, 36);
+                    compare(vertical ? button.width : button.height, 36);
+                    verify(suite.descendants(widget, item => item === button).length === 1,
+                           "padding preserves delegates");
+                    compare(config.widgetPadding, 6, "the hosting bar config is not mutated");
+                }
+                widget.widgetThickness = 30;
+                tryCompare(widget, "pillPadding", 48, 1000, "override pixels do not scale with widget thickness");
+                widget.barConfig = {
+                    widgetPadding: 10,
+                    widgetStyle: "segments"
+                };
+                compare(widget.activePillHost.barConfig.widgetStyle, "segments", "other host settings remain reactive");
+                widget.axis = {
+                    isVertical: !vertical,
+                    edge: vertical ? "top" : "left"
+                };
+                tryCompare(widget, "pillPadding", 48, 1000, "the override follows orientation changes");
+                compare(widget.horizontalPillHost.horizontalPadding, 48);
+                compare(widget.verticalPillHost.horizontalPadding, 48);
+                widget.pluginData = {
+                    overridePadding: false,
+                    widgetPadding: 24
+                };
+                tryCompare(widget, "pillPadding", 10);
+                compare(widget.activePillHost.barConfig, widget.barConfig);
+                compare(widget.horizontalPillHost.barConfig, widget.barConfig);
+                compare(widget.verticalPillHost.barConfig, widget.barConfig);
+                widget.barConfig = {
+                    widgetPadding: 3
+                };
+                tryCompare(widget, "pillPadding", 3, 1000, "turning off the override restores the live host binding");
+            }
+        }
+
+        function test_padding_override_bounds() {
+            for (const [input, expected] of [[-5, 0], [100, 48], ["12", 12], ["invalid", 8], [null, 8]]) {
+                windows.pluginData = {
+                    overridePadding: true,
+                    widgetPadding: input
+                };
+                tryCompare(windows, "pillPadding", expected);
+            }
+        }
+
         function test_dux_section_budget_reserves_neighbors_and_padding(data) {
             const fixture = createTemporaryObject(budgetFixture, suite, {
                                                       vertical: data.vertical
@@ -316,6 +407,19 @@ Item {
                 widgetPadding: 0
             };
             compare(fixture.navigation.primarySizeLimit, 868, "pill padding is subtracted exactly once");
+            fixture.navigation.pluginData = {
+                overridePadding: true,
+                widgetPadding: 24
+            };
+            compare(fixture.navigation.primarySizeLimit, 820,
+                    "the budget reserves the overridden padding exactly once");
+            fixture.navigation.pluginData = {
+                overridePadding: true,
+                widgetPadding: 0
+            };
+            compare(fixture.navigation.primarySizeLimit, 868);
+            fixture.navigation.pluginData = {};
+            compare(fixture.navigation.primarySizeLimit, 868);
         }
 
         function test_dux_section_budget_reserves_native_overflow_data() {
