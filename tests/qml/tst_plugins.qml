@@ -351,6 +351,76 @@ Item {
             compare(fixture.navigation.primarySizeLimit, 852, "removing overflow releases the trigger and its gap");
         }
 
+        function test_workspace_edges_remain_clickable_with_inset_data() {
+            const rows = [];
+            for (const edge of ["top", "bottom", "left", "right"]) {
+                for (const thickness of [26, 36])
+                    rows.push({
+                                  tag: edge + "-" + thickness,
+                                  edge: edge,
+                                  thickness: thickness
+                              });
+            }
+            return rows;
+        }
+
+        function test_workspace_edges_remain_clickable_with_inset(data) {
+            const vertical = ["left", "right"].includes(data.edge);
+            NiriService.allWorkspaces = [
+                        {
+                            id: 10,
+                            idx: 1,
+                            output: "DP-1",
+                            is_active: true
+                        },
+                        {
+                            id: 20,
+                            idx: 2,
+                            output: "DP-1"
+                        }
+                    ];
+            workspaces.axis = {
+                isVertical: vertical,
+                edge: data.edge
+            };
+            workspaces.widgetThickness = data.thickness;
+            workspaces.barConfig = {
+                widgetInset: (48 - data.thickness) / 2
+            };
+            wait(30);
+            const buttons = suite.descendants(workspaces, item => "workspaceId" in item);
+            compare(buttons.length, 2);
+            const button = buttons[1];
+            const center = button.mapToItem(workspaces, button.width / 2, button.height / 2);
+            const popout = suite.descendants(workspaces, item => "trigger" in item && "popupWidth" in item)[0];
+            for (const cross of [0, workspaces.barThickness - 1]) {
+                const x = vertical ? cross : center.x;
+                const y = vertical ? center.y : cross;
+                NiriService.requests = [];
+                mouseClick(workspaces, x, y, Qt.LeftButton);
+                compare(NiriService.requests.length, 1, "the inset edge must activate its workspace once");
+                compare(NiriService.requests[0].Action.FocusWorkspace.reference.Id, 20);
+                mouseClick(workspaces, x, y, Qt.RightButton);
+                compare(workspaces.editingWorkspaceId, 20);
+                verify(popout.visible, "the inset edge also opens the icon picker");
+                compare(NiriService.requests.length, 1, "right click must not switch workspaces");
+                popout.close();
+            }
+            compare(vertical ? button.width : button.height, data.thickness,
+                    "full-thickness input must not enlarge the visible button");
+            const firstEnd = buttons[0].mapToItem(workspaces, buttons[0].width, buttons[0].height);
+            const secondStart = button.mapToItem(workspaces, 0, 0);
+            const gap = vertical ? (firstEnd.y + secondStart.y) / 2 : (firstEnd.x + secondStart.x) / 2;
+            NiriService.requests = [];
+            mouseClick(workspaces, vertical ? 0 : gap, vertical ? gap : 0, Qt.LeftButton);
+            compare(NiriService.requests.length, 0, "workspace spacing is not part of either hit target");
+            const outside = workspaces.mapToItem(suite, vertical ? workspaces.barThickness + 1 : center.x, vertical
+                                                 ? center.y : workspaces.barThickness + 1);
+            mouseClick(suite, outside.x, outside.y, Qt.LeftButton);
+            compare(NiriService.requests.length, 0, "hit targets stay within the bar thickness");
+            compare(suite.descendants(workspaces, item => "workspaceId" in item)[1], button);
+        }
+
         function test_native_icon_and_font_scaling_data() {
             return [
                         {
@@ -547,6 +617,8 @@ Item {
             compare(fixture.navigation.radius, Math.min(Theme.cornerRadius, 18));
             compare(fixture.workspace.barStyle, "");
             compare(fixture.workspace.radius, Theme.cornerRadius);
+            compare(fixture.workspace.hitWidth, fixture.workspace.width, "picker targets keep their own width");
+            compare(fixture.workspace.hitHeight, fixture.workspace.height, "picker targets keep their own height");
         }
 
         function test_scroll_follows_dux_per_bar_workspace_option() {

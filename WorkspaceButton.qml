@@ -12,6 +12,9 @@ BarPillSurface {
     property int iconSize: 0
     // Empty in the icon picker, whose existing grid style is independent.
     property string barStyle: ""
+    // Bar delegates can keep the visual inset while reaching the bar edges.
+    property real hitWidth: width
+    property real hitHeight: height
     signal clicked
     signal rightClicked(var anchor)
     implicitWidth: 36
@@ -58,7 +61,9 @@ BarPillSurface {
     }
     MouseArea {
         id: pointer
-        anchors.fill: parent
+        anchors.centerIn: parent
+        width: button.hitWidth
+        height: button.hitHeight
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor

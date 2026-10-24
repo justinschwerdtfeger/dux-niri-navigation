@@ -64,6 +64,8 @@ Item {
                 anchors.centerIn: parent
                 width: rail.vertical ? rail.buttonSize : rail.buttonLength
                 height: rail.vertical ? rail.buttonLength : rail.buttonSize
+                hitWidth: row.width
+                hitHeight: row.height
                 enabled: rail.available
                 iconName: rail.assignments[String(workspaceId)]?.custom || rail.assignments[String(workspaceId)]
                           ?.automatic || "empty_dashboard"

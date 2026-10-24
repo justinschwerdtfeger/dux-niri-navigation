@@ -43,6 +43,8 @@ The sidebar uses the same output-scoped tabs, focus/close actions, favicons, dra
 
 Shows the monitor’s workspaces, including its trailing empty workspace, in a horizontal row or vertical rail. Left-click switches workspace; right-click opens a searchable picker with 100 monochrome DMS Material Symbols. Right-click a picker icon to pin/unpin it. Pinned symbols persist through DMS settings; workspace assignments live only for the shell session and are removed with the workspace. Choosing an icon never names or retains a workspace.
 
+The bar’s inset changes the visible buttons, while their click targets span the full bar thickness. This keeps top/bottom edges clickable on horizontal bars and left/right edges clickable on vertical bars.
+
 Empty workspaces start with `empty_dashboard`; the first observed window seeds a simple app category. Assignments stay stable when that window closes. The picker’s current layout is intentionally retained.
 
 ## Optional favicons

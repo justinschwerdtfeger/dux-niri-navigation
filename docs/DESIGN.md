@@ -58,6 +58,8 @@ Show the output’s workspaces in index order, including the trailing empty work
 
 Use DMS’s monochrome Material Symbols through `DIcon`. The 336-pixel picker has padded content, a 264-pixel all-icons grid, search, and bounded pinned favorites. Selection stays open; right-click pins/unpins. Only ordered favorite symbol names persist. Until its own favorite setting exists, Workspaces reads the legacy `justinNavigation` favorites; saving even an empty list overrides that fallback. There is no automatic-reset action. Anchor the popup with DMS’s `getPopupTriggerPosition` using the actual top/bottom/left/right bar edge. Close stale editing on workspace removal/output movement.
 
+Workspace bar buttons keep their visible inset and native rounding while their pointer targets fill the full cross-axis delegate row. Left and right clicks work through the inset up to either bar edge. Primary-axis spacing and regions outside the bar remain outside these targets; picker buttons retain their own input bounds.
+
 The rail keeps delegates and manual scroll through unchanged snapshots; active-workspace, viewport, and scaled row-length changes reveal the selected row after pending layout updates. Orientation changes may recreate ListView delegates. Bound horizontal width and vertical height by the hosting section and scroll overflow on the selected axis. Buttons support keyboard activation and visible focus feedback.
 
 ## Favicons
