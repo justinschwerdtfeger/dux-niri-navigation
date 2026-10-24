@@ -29,8 +29,9 @@ Item {
     Item {
         id: horizontalPill
         property Component content: root.horizontalBarPill
+        property var barConfig: root.barConfig
         property real widgetThickness: root.widgetThickness
-        readonly property real horizontalPadding: (root.barConfig?.widgetPadding ?? 8) * widgetThickness / 30
+        readonly property real horizontalPadding: (barConfig?.widgetPadding ?? 8) * widgetThickness / 30
         property bool enableBackgroundHover: true
         property bool enableCursor: true
         visible: !root.isVertical
@@ -59,8 +60,9 @@ Item {
     Item {
         id: verticalPill
         property Component content: root.verticalBarPill
+        property var barConfig: root.barConfig
         property real widgetThickness: root.widgetThickness
-        readonly property real horizontalPadding: (root.barConfig?.widgetPadding ?? 8) * widgetThickness / 30
+        readonly property real horizontalPadding: (barConfig?.widgetPadding ?? 8) * widgetThickness / 30
         property bool enableBackgroundHover: true
         property bool enableCursor: true
         visible: root.isVertical
