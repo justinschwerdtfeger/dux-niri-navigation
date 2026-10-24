@@ -100,9 +100,9 @@ QtObject {
             return;
         // DMS focuses this output first when it is not the current output.
         if (direction > 0)
-            NiriService.moveColumnRight(outputName);
+            NiriService.focusColumnRight(outputName);
         else
-            NiriService.moveColumnLeft(outputName);
+            NiriService.focusColumnLeft(outputName);
     }
 
     function focusWindow(windowId) {

@@ -14,7 +14,7 @@ class LinkPluginTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.config = Path(temporary.name)
-        self.parent = self.config / "DankMaterialShell/plugins"
+        self.parent = self.config / "dms/plugins"
 
     def link(self):
         return subprocess.run(

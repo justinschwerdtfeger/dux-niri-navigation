@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
-plugin_parent="${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins"
+plugin_parent="${XDG_CONFIG_HOME:-$HOME/.config}/dms/plugins"
 sources=("$repo_dir" "$repo_dir/workspace-plugin")
 names=(JustinNavigation JustinWorkspaces)
 

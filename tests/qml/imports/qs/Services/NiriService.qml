@@ -31,13 +31,13 @@ QtObject {
                         }
                     });
     }
-    function moveColumnLeft(output) {
+    function focusColumnLeft(output) {
         return send({
                         output: output,
                         direction: -1
                     });
     }
-    function moveColumnRight(output) {
+    function focusColumnRight(output) {
         return send({
                         output: output,
                         direction: 1

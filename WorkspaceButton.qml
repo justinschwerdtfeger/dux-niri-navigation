@@ -1,17 +1,27 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
+import qs.Modules.DBar
 
-Rectangle {
+BarPillSurface {
     id: button
     property string iconName: "desktop_windows"
     property string label: ""
     property bool selected: false
+    // Picker buttons retain automatic sizing; bar instances use Dux's scale.
+    property int iconSize: 0
+    // Empty in the icon picker, whose existing grid style is independent.
+    property string barStyle: ""
+    // Bar delegates can keep the visual inset while reaching the bar edges.
+    property real hitWidth: width
+    property real hitHeight: height
     signal clicked
     signal rightClicked(var anchor)
     implicitWidth: 36
     implicitHeight: 36
-    radius: Theme.cornerRadius
+    style: barStyle || "pills"
+    radiusOverride: barStyle ? -1 : Theme.cornerRadius
+    pressed: barStyle !== "" && pointer.pressed
     color: selected || pointer.containsMouse ? Theme.withAlpha(Theme.primary, pointer.pressed ? 0.25 : 0.12) :
                                                "transparent"
     opacity: enabled ? 1 : 0.4
@@ -43,15 +53,17 @@ Rectangle {
         border.color: Theme.primary
         visible: button.activeFocus
     }
-    DankIcon {
+    DIcon {
         anchors.centerIn: parent
         name: button.iconName
-        size: Math.max(16, Math.min(button.width, button.height) - 10)
+        size: button.iconSize > 0 ? button.iconSize : Math.max(16, Math.min(button.width, button.height) - 10)
         color: button.selected ? Theme.primary : Theme.surfaceText
     }
     MouseArea {
         id: pointer
-        anchors.fill: parent
+        anchors.centerIn: parent
+        width: button.hitWidth
+        height: button.hitHeight
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor

@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import "WorkspaceModel.js" as WorkspaceModel
 
 Column {
@@ -19,7 +19,7 @@ Column {
         color: Theme.surfaceText
         font.pixelSize: Theme.fontSizeMedium
     }
-    DankTextField {
+    DTextField {
         id: search
         width: menu.width
         placeholderText: "Search icons"
@@ -40,7 +40,7 @@ Column {
         cellWidth: 44
         cellHeight: 44
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: DankScrollbar {}
+        ScrollBar.vertical: DScrollbar {}
         model: menu.pinnedIcons
         delegate: WorkspaceButton {
             required property string modelData
@@ -65,7 +65,7 @@ Column {
         cellWidth: 44
         cellHeight: 44
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: DankScrollbar {}
+        ScrollBar.vertical: DScrollbar {}
         model: WorkspaceModel.icons.filter(icon => icon.replace(/_/g, " ").includes(search.text.toLowerCase().trim()))
         delegate: WorkspaceButton {
             required property string modelData
@@ -76,7 +76,7 @@ Column {
             selected: menu.currentIcon === modelData
             onClicked: menu.iconSelected(modelData)
             onRightClicked: menu.pinToggled(modelData)
-            DankIcon {
+            DIcon {
                 visible: menu.pinnedIcons.includes(parent.iconName)
                 anchors.right: parent.right
                 anchors.top: parent.top

@@ -8,7 +8,7 @@ Run from the repository:
 make link-plugin
 ```
 
-The helper creates two links under `$XDG_CONFIG_HOME/DankMaterialShell/plugins`, defaulting to `~/.config`:
+The helper creates two links under `$XDG_CONFIG_HOME/dms/plugins`, defaulting to `~/.config`:
 
 | Directory          | Target              | Plugin ID                               |
 | ------------------ | ------------------- | --------------------------------------- |

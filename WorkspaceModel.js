@@ -1,5 +1,5 @@
 .pragma library
-// Material Symbols Rounded, rendered by DMS DankIcon in a single theme color.
+// Material Symbols Rounded, rendered by Dux DIcon in a single theme color.
 var icons = [
     'web',
     'terminal',

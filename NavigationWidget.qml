@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Common
 import qs.Services
 
 NavigationHost {
@@ -31,13 +32,20 @@ NavigationHost {
             available: niri.available
             reorderBusy: niri.reorderBusy
             maximumWidth: navigation.stripLength
-            buttonHeight: navigation.isVertical ? navigation.widgetThickness : navigation.barThickness
+            buttonHeight: navigation.widgetThickness
+            crossAxisSize: Math.max(navigation.widgetThickness, navigation.barThickness)
+            barStyle: navigation.barWidgetStyle
+            tabIconSize: navigation.iconSizeLarge
+            tabTextSize: navigation.textSize
             referenceWidth: navigation.parentScreen?.width ?? 1920
             preferredTabWidth: Number(navigation.pluginData.tabWidth) || 240
             parentScreen: navigation.parentScreen
             barEdge: navigation.axis?.edge ?? "top"
             barSpacing: navigation.barSpacing
             barThickness: navigation.barThickness
+            hostReverseScroll: SettingsData.widgetOption("workspaceSwitcher", SettingsData.barWidgetEntry(
+                                                             navigation.barConfig, "workspaceSwitcher"),
+                                                         "reverseScrolling")
             reverseScroll: navigation.pluginData.reverseScroll === true
             onColumnScrollRequested: direction => niri.scrollColumn(direction)
             onWindowActivated: windowId => niri.focusWindow(windowId)

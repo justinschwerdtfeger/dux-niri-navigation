@@ -8,10 +8,10 @@ RUN curl -fsSL https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedo
         ShellCheck qt6-qtdeclarative-devel qt6-qtsvg qt6-qtimageformats quickshell-0.3.1 \
     && dnf clean all
 
-ARG DMS_REVISION=v1.6.2
-ARG DMS_COMMIT=2db7646fe3ab47fddfdb8723f2da07d61a0d47ac
+ARG DMS_REVISION=justin-stable
+ARG DMS_COMMIT=0bd677b213a445d4012e37968f8beca0acd90012
 RUN git clone --depth 1 --branch "${DMS_REVISION}" --recurse-submodules \
-        https://github.com/AvengeMedia/DankMaterialShell.git /opt/dms \
+        https://github.com/justinschwerdtfeger/dux-shell.git /opt/dms \
     && git -C /opt/dms rev-parse HEAD > /opt/dms-revision \
     && test "$(cat /opt/dms-revision)" = "${DMS_COMMIT}"
 

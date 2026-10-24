@@ -22,25 +22,31 @@ Item {
     // Zero retains ordinary bar sizing.
     property real verticalRowHeight: 0
     property int tabIconSize: 0
+    property real tabTextSize: Theme.fontSizeSmall
     readonly property bool rotatedTabs: vertical && verticalDisplay === "rotated"
     readonly property bool compactTabs: vertical && !rotatedTabs
     property real maximumWidth: 640
     property real buttonHeight: 30
+    // Native artwork can extend beyond the visual pill into the bar's inset.
+    property real crossAxisSize: buttonHeight
+    readonly property real crossAxisPadding: Math.max(0, (crossAxisSize - buttonHeight) / 2)
+    property string barStyle: ""
     property real referenceWidth: 1920
     property real preferredTabWidth: 240
     property var parentScreen: null
     property string barEdge: "top"
     property real barSpacing: 0
     property real barThickness: buttonHeight
+    property bool hostReverseScroll: false
     property bool reverseScroll: false
     property var tooltipAnchor: null
-    readonly property DankTooltip activeTooltip: tooltipLoader.item as DankTooltip
+    readonly property DTooltip activeTooltip: tooltipLoader.item as DTooltip
     readonly property real gap: Theme.spacingXS
     readonly property var tabLayout: {
         if (compactTabs) {
             return WindowModel.compactTabGeometry(windows.length, gap, controlWidth);
         }
-        const minimum = Math.max(96, (buttonHeight + 24) * 1.5);
+        const minimum = Math.max(96, (buttonHeight + 24) * 1.5, tabIconSize + tabTextSize * 6 + 12);
         return WindowModel.tabGeometry(windows, gap, minimum, referenceWidth, preferredTabWidth);
     }
     property bool animationReady: false
@@ -61,8 +67,8 @@ Item {
         if (compactTabs && verticalRowHeight > 0)
             return verticalRowHeight;
         if (vertical && verticalDisplay === "titles")
-            return Math.min(buttonHeight, Theme.fontSizeSmall + 24);
-        return buttonHeight;
+            return Math.max(Math.min(buttonHeight, Theme.fontSizeSmall + 24), tabTextSize + 12, tabIconSize + 8);
+        return vertical ? Math.max(buttonHeight, tabIconSize + 8) : buttonHeight;
     }
     readonly property var stripLayout: WindowModel.stripGeometry(animatedContentWidth, maximumWidth, controlWidth, gap)
     // During growth, compare against the same animated demand used to size
@@ -269,7 +275,10 @@ Item {
                                   value: 0
                               })
 
-    onReverseScrollChanged: {
+    onReverseScrollChanged: resetWheelState()
+    onHostReverseScrollChanged: resetWheelState()
+
+    function resetWheelState() {
         wheelState = {
             axis: "",
             source: "",
@@ -288,8 +297,7 @@ Item {
             return;
         hideTooltip(null);
         wheelState = WindowModel.wheelNavigation(wheelState, wheel.angleDelta.x, wheel.angleDelta.y, wheel.pixelDelta?.x ?? 0,
-                                                 wheel.pixelDelta?.y ?? 0, SettingsData.reverseScrolling,
-                                                 reverseScroll);
+                                                 wheel.pixelDelta?.y ?? 0, hostReverseScroll, reverseScroll);
         for (let step = 0; step < wheelState.steps; step++)
             columnScrollRequested(wheelState.direction);
     }
@@ -305,7 +313,7 @@ Item {
     implicitWidth: vertical ? buttonHeight : stripLayout.width
     width: implicitWidth
     height: implicitHeight
-    clip: true
+    clip: crossAxisPadding === 0
 
     function showTooltip(anchor) {
         if (!parentScreen || viewport.moving || !anchor.hovered || dragWindowId !== null || workspaceEnter.running ||
@@ -343,7 +351,7 @@ Item {
     Loader {
         id: tooltipLoader
         active: false
-        sourceComponent: DankTooltip {}
+        sourceComponent: DTooltip {}
     }
 
     onVisibleChanged: {
@@ -426,11 +434,11 @@ Item {
         id: viewport
         opacity: strip.tabOpacity
         visible: strip.windows.length > 0
-        anchors.left: parent.left
-        anchors.top: parent.top
+        x: strip.vertical ? -strip.crossAxisPadding : 0
+        y: strip.vertical ? 0 : -strip.crossAxisPadding
         readonly property real controlGap: visible ? strip.gap : 0
-        width: strip.vertical ? strip.buttonHeight : Math.max(0, strip.width - controls.width - controlGap)
-        height: strip.vertical ? Math.max(0, strip.height - controls.height - controlGap) : strip.buttonHeight
+        width: strip.vertical ? strip.crossAxisSize : Math.max(0, strip.width - controls.width - controlGap)
+        height: strip.vertical ? Math.max(0, strip.height - controls.height - controlGap) : strip.crossAxisSize
         contentWidth: strip.vertical ? width : strip.tabLayout.totalWidth
         contentHeight: strip.vertical ? strip.tabLayout.totalWidth : height
         flickableDirection: strip.vertical ? Flickable.VerticalFlick : Flickable.HorizontalFlick
@@ -449,7 +457,8 @@ Item {
         onMovementEnded: Qt.callLater(strip.revealActive)
 
         Grid {
-            y: strip.tabOffset
+            x: strip.vertical ? strip.crossAxisPadding : 0
+            y: strip.tabOffset + (strip.vertical ? 0 : strip.crossAxisPadding)
             columns: strip.vertical ? 1 : Math.max(1, tabs.count)
             spacing: strip.gap
 
@@ -507,6 +516,8 @@ Item {
                         showText: strip.showTitles
                         textOpacity: strip.titleOpacity
                         iconSize: strip.tabIconSize
+                        barStyle: strip.barStyle
+                        textSize: strip.tabTextSize
                         appId: tab.appId
                         faviconSource: strip.faviconSources[tab.windowId] ?? ""
                         showAppIcon: true
@@ -542,12 +553,16 @@ Item {
 
     Grid {
         id: controls
-        columns: strip.vertical ? 1 : 3
+        // Empty horizontal columns retain spacing even with hidden arrows.
+        // Match the model's one-control budget when only the launcher shows.
+        columns: strip.vertical || !strip.showArrows ? 1 : 3
         x: strip.vertical ? 0 : strip.width - width
         y: strip.vertical ? strip.height - height : 0
         spacing: strip.gap
 
         NavigationButton {
+            textSize: strip.tabTextSize
+            barStyle: strip.barStyle
             width: strip.vertical ? strip.buttonHeight : strip.controlWidth
             height: strip.vertical ? strip.controlWidth : strip.buttonHeight
             visible: strip.showArrows
@@ -560,6 +575,8 @@ Item {
         }
 
         NavigationButton {
+            textSize: strip.tabTextSize
+            barStyle: strip.barStyle
             width: strip.vertical ? strip.buttonHeight : strip.controlWidth
             height: strip.vertical ? strip.controlWidth : strip.buttonHeight
             visible: strip.showArrows
@@ -572,6 +589,8 @@ Item {
         }
 
         NavigationButton {
+            textSize: strip.tabTextSize
+            barStyle: strip.barStyle
             width: strip.vertical ? strip.buttonHeight : strip.controlWidth
             height: strip.vertical ? strip.controlWidth : strip.buttonHeight
             onTooltipRequested: anchor => strip.showTooltip(anchor)

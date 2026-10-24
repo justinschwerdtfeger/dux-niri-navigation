@@ -4,6 +4,8 @@
 
 Read `README.md`, `docs/DESIGN.md`, and `docs/DEVELOPMENT.md` before changing behavior. Keep current contracts and validation limits accurate. Use Git history for past experiments instead of appending a development diary to the docs.
 
+For widget creation or host integration changes, use the project [Dux plugin development skill](skills/dms-plugin-dev/SKILL.md), adapted from the fork's plugin guidance.
+
 ## Product contracts
 
 - This repository provides independent DMS Window Tabs and Workspaces plugins for Niri. Both support horizontal and vertical bars. Vertical tab titles are optional; preserve the established visual style while fixing usability, bugs, and DMS inconsistencies.
@@ -15,7 +17,7 @@ Read `README.md`, `docs/DESIGN.md`, and `docs/DEVELOPMENT.md` before changing be
 
 ## Implementation
 
-- Inspect the installed **and active** DMS source before changing internal APIs. Record the inspected revision/version. The current baseline is DMS 1.6.2, Quickshell 0.3.1, Niri 26.04.
+- Inspect the installed **and active** DMS source before changing internal APIs. Record the inspected revision/version. The development target is Dux 2.0 fork revision `0bd677b2`, Quickshell 0.3.1; previous native validation used DMS 1.6.2 and Niri 26.04.
 - Keep compositor-service access in `NiriState.qml` and section/layout assumptions in `BarGeometry.qml`. Prefer reactive DMS state over polling or another Niri IPC connection.
 - Keep transformations and reorder acknowledgment logic in pure JS models. Share ID-based ListModel updates through `ModelUtils`; preserve delegates and avoid unchanged role writes.
 - Prefer clear code and measured reductions in work over compressed one-line implementations. Use the configured formatters rather than introducing another style.

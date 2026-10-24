@@ -2,9 +2,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Widgets
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
+import qs.Modules.DBar
 
-Rectangle {
+BarPillSurface {
     id: button
 
     property string text: ""
@@ -15,6 +16,9 @@ Rectangle {
     property real textOpacity: 1
     // Zero uses the available button geometry.
     property int iconSize: 0
+    property real textSize: Theme.fontSizeSmall
+    // Empty outside a bar: retain the sidebar's established shape.
+    property string barStyle: ""
     readonly property var desktopEntry: showAppIcon && appId ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId)) :
                                                                null
     readonly property string applicationName: showAppIcon && appId ? Paths.getAppName(appId, desktopEntry) : ""
@@ -53,7 +57,9 @@ Rectangle {
             event.accepted = true;
         }
     }
-    radius: Math.min(Theme.cornerRadius, height / 2)
+    style: barStyle || "pills"
+    radiusOverride: barStyle ? -1 : Math.min(Theme.cornerRadius, height / 2)
+    pressed: barStyle !== "" && down
     color: opaqueBackground ? Theme.withAlpha(Theme.surfaceContainerHigh, 1) : highlightColor
     border.width: urgent ? 1 : 0
     border.color: Theme.primary
@@ -123,7 +129,7 @@ Rectangle {
     // prefix handling conflicts with Quickshell's image://icon provider URLs.
     Item {
         id: iconSlot
-        x: button.showText ? 6 : (button.width - width) / 2
+        x: button.showText ? Math.min(6, (button.width - width) / 2) : (button.width - width) / 2
         anchors.verticalCenter: parent.verticalCenter
         width: button.appIconSize
         height: button.appIconSize
@@ -155,7 +161,7 @@ Rectangle {
             mipmap: true
         }
 
-        DankIcon {
+        DIcon {
             anchors.centerIn: parent
             visible: button.showAppIcon && favicon.status !== Image.Ready && appIcon.status !== Image.Ready
             name: "window"
@@ -173,7 +179,7 @@ Rectangle {
         text: button.text
         textFormat: Text.PlainText
         color: button.selected ? Theme.primary : Theme.surfaceText
-        font.pixelSize: Theme.fontSizeSmall
+        font.pixelSize: button.textSize
         elide: Text.ElideRight
         wrapMode: Text.NoWrap
         verticalAlignment: Text.AlignVCenter

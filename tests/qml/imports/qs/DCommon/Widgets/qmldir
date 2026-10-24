@@ -1,0 +1,5 @@
+module qs.DCommon.Widgets
+DIcon 1.0 DIcon.qml
+DScrollbar 1.0 DScrollbar.qml
+DTextField 1.0 DTextField.qml
+StyledText 1.0 StyledText.qml

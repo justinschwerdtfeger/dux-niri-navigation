@@ -38,12 +38,12 @@ NavigationHost {
                       })[axis?.edge ?? "top"];
         const pos = SettingsData.getPopupTriggerPosition(globalPos, parentScreen, barThickness, anchor.width, barSpacing,
                                                          edge, barConfig);
-        iconPopout.setTriggerPosition(pos.x, pos.y, pos.width, section, parentScreen, edge, barThickness, barSpacing,
-                                      barConfig);
+        iconPopout.setTriggerPosition(pos.x, pos.y, pos.width, section, parentScreen, edge, barThickness, barSpacing, barConfig,
+                                      anchor);
         iconPopout.open();
     }
 
-    DankPopout {
+    DPopout {
         id: iconPopout
         layerNamespace: "dms:justin-workspace-icons"
         popupWidth: 336
@@ -77,11 +77,16 @@ NavigationHost {
 
     navigationContent: Component {
         WorkspaceRail {
+            id: workspaceRail
             vertical: navigation.isVertical
             workspaces: niri.outputWorkspaces
             assignments: niri.workspaceIcons
             available: niri.available
-            buttonSize: navigation.isVertical ? navigation.widgetThickness : navigation.barThickness
+            buttonSize: navigation.widgetThickness
+            crossAxisSize: Math.max(navigation.widgetThickness, navigation.barThickness)
+            crossAxisOffset: navigation.contentCrossOffset(workspaceRail)
+            barStyle: navigation.barWidgetStyle
+            iconSize: navigation.iconSize
             maximumWidth: navigation.primarySizeLimit
             maximumHeight: navigation.primarySizeLimit
             onWorkspaceActivated: workspaceId => niri.focusWorkspace(workspaceId)

@@ -28,6 +28,7 @@ Item {
         property var reorderRequest: null
         onWindowActivated: activations++
         onWindowCloseRequested: closes++
+        onColumnScrollRequested: direction => adapter.scrollColumn(direction)
         onWindowReorderRequested: (source, target, after) => {
             reorderRequest = [source, target, after];
             reorderBusy = true;
@@ -42,6 +43,24 @@ Item {
         buttonSize: 36
         property var pickerRequest: null
         onIconMenuRequested: (workspaceId, anchor) => pickerRequest = [workspaceId, anchor]
+    }
+
+    Component {
+        id: overflowingWorkspaceRail
+        Plugin.WorkspaceRail {
+            available: true
+            buttonSize: 36
+            crossAxisSize: 48
+            maximumWidth: 96
+            maximumHeight: 96
+            workspaces: Array.from({
+                                       length: 8
+                                   }, (_, index) => ({
+                                       id: index + 1,
+                                       idx: index + 1,
+                                       is_active: index === 7
+                                   }))
+        }
     }
 
     function descendants(item, predicate) {
@@ -142,6 +161,37 @@ Item {
             Theme.snapListModelChanges = true;
         }
 
+        function test_wheel_uses_dux_column_focus_and_composes_reverse_options() {
+            for (const hostReverse of [false, true]) {
+                for (const pluginReverse of [false, true]) {
+                    strip.hostReverseScroll = hostReverse;
+                    strip.reverseScroll = pluginReverse;
+                    strip.resetWheelState();
+                    NiriService.requests = [];
+                    const wheel = {
+                        accepted: false,
+                        angleDelta: {
+                            x: 0,
+                            y: -240
+                        },
+                        pixelDelta: {
+                            x: 0,
+                            y: 0
+                        }
+                    };
+                    strip.handleWheel(wheel);
+                    verify(wheel.accepted);
+                    compare(NiriService.requests.length, 2);
+                    const direction = hostReverse !== pluginReverse ? -1 : 1;
+                    compare(NiriService.requests[0].direction, direction);
+                    compare(NiriService.requests[0].output, "DP-1");
+                    compare(NiriService.requests[1].direction, direction);
+                }
+            }
+            strip.hostReverseScroll = false;
+            strip.reverseScroll = false;
+        }
+
         function test_snapshot_preserves_buttons_and_mouse_timing() {
             const before = suite.tabButtons();
             compare(before.length, 2);
@@ -184,6 +234,73 @@ Item {
             verify(!strip.showArrows);
             compare(strip.implicitWidth, strip.buttonHeight);
             strip.maximumWidth = 900;
+        }
+
+        function test_fitting_tabs_stay_inside_viewport_at_fractional_sizes_data() {
+            return [
+                        {
+                            tag: "fractional-tab",
+                            vertical: false,
+                            tabWidth: 239.4,
+                            thickness: 36
+                        },
+                        {
+                            tag: "fractional-controls",
+                            vertical: false,
+                            tabWidth: 320,
+                            thickness: 47.5
+                        },
+                        {
+                            tag: "large-controls",
+                            vertical: false,
+                            tabWidth: 480,
+                            thickness: 72
+                        },
+                        {
+                            tag: "rotated-fractional",
+                            vertical: true,
+                            tabWidth: 239.4,
+                            thickness: 36.5
+                        }
+                    ];
+        }
+
+        function test_fitting_tabs_stay_inside_viewport_at_fractional_sizes(data) {
+            strip.vertical = data.vertical;
+            strip.verticalDisplay = "rotated";
+            strip.buttonHeight = data.thickness;
+            strip.windows = [
+                        {
+                            id: 1,
+                            appId: "",
+                            title: "Mission Center",
+                            active: true,
+                            visualWidth: data.tabWidth * strip.referenceWidth / strip.preferredTabWidth
+                        }
+                    ];
+            wait(30);
+            verify(!strip.showArrows);
+            const viewport = suite.descendants(strip, item => "contentX" in item && "flickableDirection" in item)[0];
+            const tab = suite.tabButtons()[0].parent;
+            const pos = tab.mapToItem(viewport, 0, 0);
+            verify((data.vertical ? pos.y : pos.x) >= -0.01);
+            verify((data.vertical ? pos.y + tab.height - viewport.height : pos.x + tab.width - viewport.width) <= 0.01,
+                   "a fitting tab's rounded end must stay inside the clip boundary: " + JSON.stringify({
+                                                                                                           x: pos.x,
+                                                                                                           y: pos.y,
+                                                                                                           tabWidth: tab.width,
+                                                                                                           tabHeight:
+                                                                                                           tab.height,
+                                                                                                           viewportWidth:
+                                                                                                           viewport.width,
+                                                                                                           viewportHeight:
+                                                                                                           viewport.height,
+                                                                                                           contentX: viewport.contentX,
+                                                                                                           contentY: viewport.contentY,
+                                                                                                           stripWidth:
+                                                                                                           strip.width,
+                                                                                                           demand: strip.tabLayout.totalWidth
+                                                                                                       }));
         }
 
         function test_workspace_identity_and_shared_icons() {
@@ -338,6 +455,53 @@ Item {
             wait(30);
             compare(strip.height, strip.buttonHeight);
             verify(!strip.showArrows);
+        }
+
+        function test_workspace_scale_keeps_last_active_workspace_visible_data() {
+            return [
+                        {
+                            tag: "horizontal",
+                            vertical: false
+                        },
+                        {
+                            tag: "vertical",
+                            vertical: true
+                        }
+                    ];
+        }
+
+        function test_workspace_scale_keeps_last_active_workspace_visible(data) {
+            const growingRail = createTemporaryObject(overflowingWorkspaceRail, suite, {
+                                                          vertical: data.vertical,
+                                                          iconSize: 18
+                                                      });
+            verify(growingRail !== null);
+            const viewport = suite.descendants(growingRail, item => "contentX" in item
+                                                                    && "flickableDirection" in item)[0];
+            function activeButton() {
+                return suite.descendants(growingRail, item => "workspaceId" in item && item.workspaceId === 8)[0];
+            }
+            function activeVisible() {
+                const button = activeButton();
+                if (!button)
+                    return false;
+                const pos = button.mapToItem(viewport, 0, 0);
+                const start = data.vertical ? pos.y : pos.x;
+                const end = start + (data.vertical ? button.height : button.width);
+                return start >= -0.01 && end <= (data.vertical ? viewport.height : viewport.width) + 0.01;
+            }
+            tryVerify(activeVisible);
+            const before = activeButton();
+            const extent = data.vertical ? viewport.height : viewport.width;
+            growingRail.iconSize = 40;
+            wait(30);
+            compare(data.vertical ? viewport.height : viewport.width, extent);
+            compare(growingRail.activeWorkspaceId, 8);
+            verify(activeVisible(), "larger rows must not hide the unchanged active workspace");
+            compare(activeButton(), before, "rescaling preserves the selected delegate");
+            growingRail.iconSize = 18;
+            wait(30);
+            verify(activeVisible(), "reducing scale keeps the selection visible too");
         }
 
         function test_horizontal_workspaces_preserve_buttons_and_picker_anchor() {

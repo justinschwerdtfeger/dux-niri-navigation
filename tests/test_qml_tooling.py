@@ -29,8 +29,8 @@ class ToolingTests(unittest.TestCase):
             "Widgets/StyledText.qml",
             "Services/NiriService.qml",
             "Modules/Plugins/PluginComponent.qml",
-            "DankCommon/Common/Style.qml",
-            "DankCommon/Widgets/StyledText.qml",
+            "DCommon/Common/Style.qml",
+            "DCommon/Widgets/StyledText.qml",
         ):
             path = self.source / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -60,8 +60,8 @@ class ToolingTests(unittest.TestCase):
             "Widgets",
             "Services",
             "Modules/Plugins",
-            "DankCommon/Common",
-            "DankCommon/Widgets",
+            "DCommon/Common",
+            "DCommon/Widgets",
         ):
             directory = generated / "qs" / module
             directory.mkdir(parents=True)
@@ -134,8 +134,8 @@ class ToolingTests(unittest.TestCase):
             self.assert_preserved()
 
     def test_missing_submodule_is_rejected(self):
-        (self.source / "DankCommon/Common/Style.qml").unlink()
-        with self.assertRaisesRegex(ValueError, "DankCommon"):
+        (self.source / "DCommon/Common/Style.qml").unlink()
+        with self.assertRaisesRegex(ValueError, "DCommon"):
             self.run_setup()
         self.assert_preserved()
 
