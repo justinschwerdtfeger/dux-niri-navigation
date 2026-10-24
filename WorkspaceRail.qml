@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import "ModelUtils.js" as ModelUtils
 
 Item {
@@ -38,10 +38,10 @@ Item {
         orientation: rail.vertical ? ListView.Vertical : ListView.Horizontal
         spacing: Theme.spacingXS
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: DankScrollbar {
+        ScrollBar.vertical: DScrollbar {
             visible: rail.vertical && list.contentHeight > list.height
         }
-        ScrollBar.horizontal: DankScrollbar {
+        ScrollBar.horizontal: DScrollbar {
             visible: !rail.vertical && list.contentWidth > list.width
         }
         delegate: WorkspaceButton {

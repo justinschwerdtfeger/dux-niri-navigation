@@ -62,6 +62,89 @@ Item {
         return result;
     }
 
+    Component {
+        id: budgetFixture
+        Item {
+            id: bar
+            width: 1000
+            height: 1000
+            property bool vertical: false
+            property alias navigation: growingWidget
+            property alias sibling: sibling
+            property alias center: center
+            property alias overflowCount: leading.overflowCount
+            Item {
+                id: leading
+                objectName: "leftSection"
+                width: bar.vertical ? 48 : entry.width + sibling.width + widgetSpacing
+                height: bar.vertical ? entry.height + sibling.height + widgetSpacing : 48
+                property real widgetSpacing: 12
+                property int overflowCount: 0
+                readonly property real overflowTriggerSize: growingWidget.widgetThickness
+                property alias overflowButton: overflowButton
+                property QtObject entryRepeater: QtObject {
+                    property int count: 2
+                    function itemAt(index) {
+                        return index === 0 ? entry : sibling;
+                    }
+                }
+                Item {
+                    // Dux 2.0's layout Item has no widgetSpacing property.
+                    Item {
+                        id: entry
+                        property var sectionContext: leading
+                        property var itemData: ({
+                                                    id: "justinNavigation"
+                                                })
+                        width: growingWidget.width
+                        height: growingWidget.height
+                        Windows.NavigationWidget {
+                            id: growingWidget
+                            section: "left"
+                            widgetThickness: 30
+                            barConfig: ({
+                                            widgetPadding: 8
+                                        })
+                            parentScreen: windows.parentScreen
+                            axis: ({
+                                       isVertical: bar.vertical,
+                                       edge: bar.vertical ? "left" : "top"
+                                   })
+                        }
+                    }
+                    Item {
+                        id: sibling
+                        property var itemData: ({
+                                                    id: "clock"
+                                                })
+                        width: bar.vertical ? 48 : 100
+                        height: bar.vertical ? 100 : 48
+                    }
+                }
+                Item {
+                    // Native overflow is separate from entryRepeater.
+                    id: overflowButton
+                    visible: leading.overflowCount > 0
+                    width: bar.vertical ? 48 : leading.overflowTriggerSize
+                    height: bar.vertical ? leading.overflowTriggerSize : 48
+                }
+            }
+            Item {
+                id: center
+                objectName: "centerSection"
+                width: bar.width
+                height: bar.height
+                property real contentStart: 400
+                property real contentSize: 100
+            }
+            Item {
+                objectName: "rightSection"
+                width: bar.vertical ? 48 : 120
+                height: bar.vertical ? 120 : 48
+            }
+        }
+    }
+
     TestCase {
         name: "Plugins"
         when: windowShown
@@ -90,11 +173,17 @@ Item {
                 edge: "top"
             };
             windows.pluginData = {};
+            windows.widgetThickness = 36;
+            windows.barThickness = 48;
+            windows.barConfig = null;
             workspaces.axis = {
                 isVertical: true,
                 edge: "left"
             };
             workspaces.pluginData = {};
+            workspaces.widgetThickness = 36;
+            workspaces.barThickness = 48;
+            workspaces.barConfig = null;
             settings.writes = [];
             wait(30);
         }
@@ -124,6 +213,147 @@ Item {
             compare(windowButtons[0].rotation, -90);
             const workspaceButtons = suite.descendants(workspaces, item => "workspaceId" in item);
             compare(workspaceButtons.length, 1);
+        }
+
+        function test_host_thickness_controls_content_on_every_edge_data() {
+            const rows = [];
+            for (const edge of ["top", "bottom", "left", "right"]) {
+                for (const thickness of [28, 40, 48])
+                    rows.push({
+                                  tag: edge + "-" + thickness,
+                                  edge: edge,
+                                  thickness: thickness
+                              });
+            }
+            return rows;
+        }
+
+        function test_host_thickness_controls_content_on_every_edge(data) {
+            const vertical = ["left", "right"].includes(data.edge);
+            for (const widget of [windows, workspaces]) {
+                widget.axis = {
+                    isVertical: vertical,
+                    edge: data.edge
+                };
+                widget.widgetThickness = data.thickness;
+                widget.barConfig = {
+                    widgetPadding: 6
+                };
+            }
+            wait(30);
+            for (const widget of [windows, workspaces]) {
+                compare(widget.activePillHost.widgetThickness, data.thickness,
+                        "the plugin must preserve the host's thickness binding");
+                compare(widget.activePillHost.enableBackgroundHover, false);
+                compare(widget.activePillHost.enableCursor, false);
+                compare(widget.pillPadding, data.thickness / 5);
+                const buttons = suite.descendants(widget, item => widget === windows ? "showAppIcon" in item :
+                                                                                       "workspaceId" in item);
+                verify(buttons.length > 0);
+                for (const button of buttons) {
+                    compare(vertical ? button.width : button.height, data.thickness);
+                    const pos = button.mapToItem(widget, 0, 0);
+                    verify((vertical ? pos.x : pos.y) >= 0);
+                    verify((vertical ? pos.x + button.width : pos.y + button.height) <= widget.barThickness);
+                }
+                widget.barThickness = 60;
+                compare(widget.activePillHost.widgetThickness, data.thickness);
+                compare(vertical ? buttons[0].width : buttons[0].height, data.thickness,
+                        "bar chrome must not enlarge content independently of the host");
+                widget.widgetThickness = 32;
+                compare(widget.activePillHost.widgetThickness, 32, "host changes stay reactive");
+            }
+        }
+
+        function test_dux_section_budget_reserves_neighbors_and_padding_data() {
+            return [
+                        {
+                            tag: "horizontal",
+                            vertical: false
+                        },
+                        {
+                            tag: "vertical",
+                            vertical: true
+                        }
+                    ];
+        }
+
+        function test_dux_section_budget_reserves_neighbors_and_padding(data) {
+            const fixture = createTemporaryObject(budgetFixture, suite, {
+                                                      vertical: data.vertical
+                                                  });
+            verify(fixture !== null);
+            wait(30);
+            // Center starts at 400: leave a gap, the 100 px sibling, a second
+            // gap, and 8 px of pill padding on each end. Ignore our own extent.
+            compare(fixture.navigation.primarySizeLimit, 260);
+            fixture.sibling.visible = false;
+            compare(fixture.navigation.primarySizeLimit, 372);
+            fixture.center.contentSize = 0;
+            compare(fixture.navigation.primarySizeLimit, 852, "an empty center must not constrain growth");
+            fixture.navigation.barConfig = {
+                widgetPadding: 0
+            };
+            compare(fixture.navigation.primarySizeLimit, 868, "pill padding is subtracted exactly once");
+        }
+
+        function test_dux_section_budget_reserves_native_overflow_data() {
+            return test_dux_section_budget_reserves_neighbors_and_padding_data();
+        }
+
+        function test_dux_section_budget_reserves_native_overflow(data) {
+            NiriService.windows = Array.from({
+                                                 length: 40
+                                             }, (_, index) => ({
+                                                 id: index + 1,
+                                                 workspace_id: 10,
+                                                 title: "Window " + index,
+                                                 layout: {
+                                                     pos_in_scrolling_layout: [index + 1, 1]
+                                                 }
+                                             }));
+            const fixture = createTemporaryObject(budgetFixture, suite, {
+                                                      vertical: data.vertical
+                                                  });
+            verify(fixture !== null);
+            fixture.sibling.visible = false;
+            fixture.center.contentSize = 0;
+            fixture.overflowCount = 1;
+            // The 1000 px bar reserves the 120 px trailing section, two
+            // 12 px gaps, the 30 px overflow trigger, and 16 px pill padding.
+            compare(fixture.navigation.primarySizeLimit, 810);
+            const primary = data.vertical ? "height" : "width";
+            tryCompare(fixture.navigation, primary, 826);
+            compare(fixture.navigation[primary] + 30 + 12 + 120 + 12, 1000,
+                    "the full strip and native overflow trigger fit beside the trailing section");
+            fixture.overflowCount = 2;
+            compare(fixture.navigation.primarySizeLimit, 810, "hidden entries share one trigger");
+            fixture.overflowCount = 0;
+            compare(fixture.navigation.primarySizeLimit, 852, "removing overflow releases the trigger and its gap");
+        }
+
+        function test_scroll_follows_dux_per_bar_workspace_option() {
+            const strip = suite.descendants(windows, item => "hostReverseScroll" in item)[0];
+            compare(strip.hostReverseScroll, false);
+            windows.barConfig = {
+                leftWidgets: [
+                    {
+                        id: "workspaceSwitcher",
+                        reverseScrolling: true
+                    }
+                ]
+            };
+            compare(strip.hostReverseScroll, true);
+            compare(strip.reverseScroll, false);
+            windows.pluginData = {
+                reverseScroll: true
+            };
+            compare(strip.hostReverseScroll, true);
+            compare(strip.reverseScroll, true);
+            windows.barConfig = {
+                leftWidgets: []
+            };
+            compare(strip.hostReverseScroll, false);
         }
 
         function test_picker_edges_and_legacy_favorites() {

@@ -1,5 +1,5 @@
 {
-  "name": "Justin Navigation (DMS 1.6.2)",
+  "name": "Justin Navigation (Dux 2.0.0)",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."

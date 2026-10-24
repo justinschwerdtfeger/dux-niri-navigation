@@ -28,6 +28,7 @@ Item {
         property var reorderRequest: null
         onWindowActivated: activations++
         onWindowCloseRequested: closes++
+        onColumnScrollRequested: direction => adapter.scrollColumn(direction)
         onWindowReorderRequested: (source, target, after) => {
             reorderRequest = [source, target, after];
             reorderBusy = true;
@@ -140,6 +141,37 @@ Item {
         function cleanup() {
             adapter.cancelReorder();
             Theme.snapListModelChanges = true;
+        }
+
+        function test_wheel_uses_dux_column_focus_and_composes_reverse_options() {
+            for (const hostReverse of [false, true]) {
+                for (const pluginReverse of [false, true]) {
+                    strip.hostReverseScroll = hostReverse;
+                    strip.reverseScroll = pluginReverse;
+                    strip.resetWheelState();
+                    NiriService.requests = [];
+                    const wheel = {
+                        accepted: false,
+                        angleDelta: {
+                            x: 0,
+                            y: -240
+                        },
+                        pixelDelta: {
+                            x: 0,
+                            y: 0
+                        }
+                    };
+                    strip.handleWheel(wheel);
+                    verify(wheel.accepted);
+                    compare(NiriService.requests.length, 2);
+                    const direction = hostReverse !== pluginReverse ? -1 : 1;
+                    compare(NiriService.requests[0].direction, direction);
+                    compare(NiriService.requests[0].output, "DP-1");
+                    compare(NiriService.requests[1].direction, direction);
+                }
+            }
+            strip.hostReverseScroll = false;
+            strip.reverseScroll = false;
         }
 
         function test_snapshot_preserves_buttons_and_mouse_timing() {

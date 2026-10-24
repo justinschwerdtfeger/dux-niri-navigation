@@ -23,14 +23,17 @@ Item {
         id: horizontalPill
         property Component content: root.horizontalBarPill
         property real widgetThickness: root.widgetThickness
-        property real horizontalPadding: 0
+        readonly property real horizontalPadding: (root.barConfig?.widgetPadding ?? 8) * widgetThickness / 30
         property bool enableBackgroundHover: true
         property bool enableCursor: true
         visible: !root.isVertical
-        width: horizontalLoader.item?.implicitWidth ?? 0
-        height: horizontalLoader.item?.implicitHeight ?? 0
+        readonly property real visualWidth: (horizontalLoader.item?.implicitWidth ?? 0) + horizontalPadding * 2
+        readonly property real visualHeight: widgetThickness
+        width: visualWidth
+        height: root.barThickness
         Loader {
             id: horizontalLoader
+            anchors.centerIn: parent
             active: !root.isVertical
             sourceComponent: horizontalPill.content
         }
@@ -39,14 +42,17 @@ Item {
         id: verticalPill
         property Component content: root.verticalBarPill
         property real widgetThickness: root.widgetThickness
-        property real horizontalPadding: 0
+        readonly property real horizontalPadding: (root.barConfig?.widgetPadding ?? 8) * widgetThickness / 30
         property bool enableBackgroundHover: true
         property bool enableCursor: true
         visible: root.isVertical
-        width: verticalLoader.item?.implicitWidth ?? 0
-        height: verticalLoader.item?.implicitHeight ?? 0
+        readonly property real visualWidth: widgetThickness
+        readonly property real visualHeight: (verticalLoader.item?.implicitHeight ?? 0) + horizontalPadding * 2
+        width: root.barThickness
+        height: visualHeight
         Loader {
             id: verticalLoader
+            anchors.centerIn: parent
             active: root.isVertical
             sourceComponent: verticalPill.content
         }

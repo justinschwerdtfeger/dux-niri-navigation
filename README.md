@@ -1,12 +1,12 @@
 # Justin Navigation plugins
 
-Two DankMaterialShell (DMS) plugins for Niri: **Justin Window Tabs** and **Justin Workspaces**. Each works on horizontal or vertical bars, independently of the other. DMS owns the bars, theme, launcher, and settings; Niri owns layout, focus, and dynamic workspace lifetime.
+Two Dux Shell (DMS) plugins for Niri: **Justin Window Tabs** and **Justin Workspaces**. Each works on horizontal or vertical bars, independently of the other. DMS owns the bars, theme, launcher, and settings; Niri owns layout, focus, and dynamic workspace lifetime.
 
 Window Tabs also provides an optional standalone sidebar with readable horizontal titles, independent of DankBar's width limit.
 
 ## Use
 
-Requires DMS with Niri and its supported Quickshell runtime. The inspected baseline is **DMS 1.6.2**, **Quickshell 0.3.1**, and **Niri 26.04**. Internal DMS APIs can change across releases.
+Targets **Dux Shell 2.0**, including the fork’s configurable widget inset, with Niri and Quickshell 0.3.1. The development source is pinned to fork revision `0bd677b2`. Earlier native validation used DMS 1.6.2 and Niri 26.04; visible Dux 2.0 acceptance is pending. Internal host APIs can change across releases.
 
 ```bash
 make link-plugin
@@ -24,9 +24,9 @@ In DMS Settings → Plugins, scan and enable the plugins you want, then add thei
 - Focuses on left press, requests close on middle-click, and reorders real Niri windows on left drag. Neighbors make room at 50% overlap. Dragging near an edge scrolls overflow.
 - Grows along the bar while reserving other widgets and padding. **Fill available bar space** defaults on; disable it to apply **Window strip length** (default 640 px) to width or height.
 - Shows overflow arrows before **+** only when needed. Manual overflow browsing stays put until focus changes. Empty workspaces show only **+**, which opens DMS’s launcher on its focused monitor.
-- Wheel up/left focuses the previous column; down/right focuses the next. DMS reverse scrolling and the plugin’s optional **Reverse scroll direction** compose; the plugin option defaults off.
+- Wheel up/left focuses the previous column; down/right focuses the next. The hosting bar’s Dux workspace-switcher reverse scrolling and the plugin’s optional **Reverse scroll direction** compose; the plugin option defaults off.
 
-Horizontal buttons and the pill fill the bar height. Vertical buttons fill the widget width; DMS's bar **Size** controls the available cross-axis space. Transitions follow DMS animation settings.
+Buttons follow Dux’s widget thickness on either axis, matching native widgets. The fork’s **Widget inset** controls their distance from the bar edges, including zero inset; the plugin does not override pill height. Dux owns pill styling, padding, and outlines. Transitions follow Dux animation settings.
 
 ## Standalone window sidebar
 
@@ -53,7 +53,7 @@ TabCtl 2.3.0 omits favicon-only notifications, so late icons can remain stale. A
 
 ## Development
 
-The devcontainer supplies the linters, formatters, Qt Quick Test, and a DMS 1.6.2 source snapshot. Docker and the Dev Container CLI are available on the reviewed host; no host QML-tool installation is needed.
+The devcontainer supplies the linters, formatters, Qt Quick Test, and a pinned Dux 2.0 fork source snapshot. Docker and the Dev Container CLI are available on the reviewed host; no host QML-tool installation is needed.
 
 ```bash
 make dev-up
@@ -90,4 +90,4 @@ Reload with `dms ipc call plugins reload justinNavigation` or `dms ipc call plug
 | Session state and favicon bridge | `state/`, `BrowserModel.js`, `scripts/tabctl-favicons.py`                                                   |
 | Tooling and regression tests     | `.devcontainer/`, `scripts/`, `tests/`, `Makefile`                                                          |
 
-[Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records this refactor. [Agent guidance](AGENTS.md) sets maintenance boundaries. Git history retains earlier implementation notes.
+[Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records this refactor. [Agent guidance](AGENTS.md) sets maintenance boundaries and links the project [Dux plugin skill](skills/dms-plugin-dev/SKILL.md). Git history retains earlier implementation notes.

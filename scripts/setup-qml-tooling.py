@@ -9,14 +9,11 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+# Quickshell scans the entire qs tree without importing its singleton modules.
+# Dux 2.0's singleton graph reaches native PanelWindows even for an empty root;
+# importing it here would require a display backend in this offscreen helper.
 HELPER = """import QtQuick
 import Quickshell
-import qs.Common
-import qs.Widgets
-import qs.Services
-import qs.Modules.Plugins
-import qs.DankCommon.Common
-import qs.DankCommon.Widgets
 
 ShellRoot {
     Timer { interval: 100; running: true; onTriggered: Qt.quit() }
@@ -60,12 +57,12 @@ def setup(root, source):
         "Widgets/StyledText.qml",
         "Services/NiriService.qml",
         "Modules/Plugins/PluginComponent.qml",
-        "DankCommon/Common/Style.qml",
-        "DankCommon/Widgets/StyledText.qml",
+        "DCommon/Common/Style.qml",
+        "DCommon/Widgets/StyledText.qml",
     )
     for name in required:
         if not (source / name).is_file():
-            raise ValueError(f"DMS source is missing {name}; include the DankCommon submodule")
+            raise ValueError(f"DMS source is missing {name}; include the DCommon submodule")
     scanner = shutil.which("qs")
     if not scanner:
         raise ValueError("Quickshell (qs) is required to generate QML imports")
@@ -129,8 +126,8 @@ def setup(root, source):
             "Widgets",
             "Services",
             "Modules/Plugins",
-            "DankCommon/Common",
-            "DankCommon/Widgets",
+            "DCommon/Common",
+            "DCommon/Widgets",
         ):
             if not (generated / "qs" / module / "qmldir").is_file():
                 raise ValueError(

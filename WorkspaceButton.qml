@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Rectangle {
     id: button
@@ -43,7 +43,7 @@ Rectangle {
         border.color: Theme.primary
         visible: button.activeFocus
     }
-    DankIcon {
+    DIcon {
         anchors.centerIn: parent
         name: button.iconName
         size: Math.max(16, Math.min(button.width, button.height) - 10)

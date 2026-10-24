@@ -32,9 +32,10 @@ Item {
     property string barEdge: "top"
     property real barSpacing: 0
     property real barThickness: buttonHeight
+    property bool hostReverseScroll: false
     property bool reverseScroll: false
     property var tooltipAnchor: null
-    readonly property DankTooltip activeTooltip: tooltipLoader.item as DankTooltip
+    readonly property DTooltip activeTooltip: tooltipLoader.item as DTooltip
     readonly property real gap: Theme.spacingXS
     readonly property var tabLayout: {
         if (compactTabs) {
@@ -269,7 +270,10 @@ Item {
                                   value: 0
                               })
 
-    onReverseScrollChanged: {
+    onReverseScrollChanged: resetWheelState()
+    onHostReverseScrollChanged: resetWheelState()
+
+    function resetWheelState() {
         wheelState = {
             axis: "",
             source: "",
@@ -288,8 +292,7 @@ Item {
             return;
         hideTooltip(null);
         wheelState = WindowModel.wheelNavigation(wheelState, wheel.angleDelta.x, wheel.angleDelta.y, wheel.pixelDelta?.x ?? 0,
-                                                 wheel.pixelDelta?.y ?? 0, SettingsData.reverseScrolling,
-                                                 reverseScroll);
+                                                 wheel.pixelDelta?.y ?? 0, hostReverseScroll, reverseScroll);
         for (let step = 0; step < wheelState.steps; step++)
             columnScrollRequested(wheelState.direction);
     }
@@ -343,7 +346,7 @@ Item {
     Loader {
         id: tooltipLoader
         active: false
-        sourceComponent: DankTooltip {}
+        sourceComponent: DTooltip {}
     }
 
     onVisibleChanged: {
