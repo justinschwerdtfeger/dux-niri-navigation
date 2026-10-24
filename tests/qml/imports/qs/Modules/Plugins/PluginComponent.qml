@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.Common
 
 Item {
     id: root
@@ -15,6 +16,11 @@ Item {
     property var pluginData: ({})
     property Component horizontalBarPill: null
     property Component verticalBarPill: null
+    readonly property int iconSize: Theme.barIconSize(barThickness, -4, barConfig?.maximizeWidgetIcons, barConfig
+                                                      ?.iconScale)
+    readonly property int iconSizeLarge: Theme.barIconSize(barThickness, undefined, barConfig?.maximizeWidgetIcons,
+                                                           barConfig?.iconScale)
+    readonly property int textSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
     readonly property bool isVertical: axis?.isVertical ?? false
     width: isVertical ? verticalPill.width : horizontalPill.width
     height: isVertical ? verticalPill.height : horizontalPill.height

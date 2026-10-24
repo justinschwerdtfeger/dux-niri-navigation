@@ -82,6 +82,9 @@ NavigationHost {
             assignments: niri.workspaceIcons
             available: niri.available
             buttonSize: navigation.widgetThickness
+            crossAxisSize: Math.max(navigation.widgetThickness, navigation.barThickness)
+            barStyle: navigation.barWidgetStyle
+            iconSize: navigation.iconSize
             maximumWidth: navigation.primarySizeLimit
             maximumHeight: navigation.primarySizeLimit
             onWorkspaceActivated: workspaceId => niri.focusWorkspace(workspaceId)

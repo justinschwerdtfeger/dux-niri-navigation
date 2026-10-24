@@ -2,11 +2,13 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Modules.Plugins
+import qs.Modules.DBar
 
 PluginComponent {
     id: navigation
 
     property Component navigationContent: null
+    readonly property string barWidgetStyle: BarMetrics.widgetStyle(barConfig)
     // Distinct host components let findPill distinguish the two BasePills.
     horizontalBarPill: Component {
         Loader {

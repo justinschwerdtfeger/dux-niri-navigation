@@ -63,6 +63,25 @@ Item {
     }
 
     Component {
+        id: nonbarButtons
+        Item {
+            property alias navigation: plainNavigation
+            property alias workspace: plainWorkspace
+            Windows.NavigationButton {
+                id: plainNavigation
+                width: 120
+                height: 36
+            }
+            Windows.WorkspaceButton {
+                id: plainWorkspace
+                x: 140
+                width: 36
+                height: 36
+            }
+        }
+    }
+
+    Component {
         id: budgetFixture
         Item {
             id: bar
@@ -330,6 +349,204 @@ Item {
             compare(fixture.navigation.primarySizeLimit, 810, "hidden entries share one trigger");
             fixture.overflowCount = 0;
             compare(fixture.navigation.primarySizeLimit, 852, "removing overflow releases the trigger and its gap");
+        }
+
+        function test_native_icon_and_font_scaling_data() {
+            return [
+                        {
+                            tag: "top",
+                            edge: "top",
+                            display: "icons"
+                        },
+                        {
+                            tag: "bottom",
+                            edge: "bottom",
+                            display: "icons"
+                        },
+                        {
+                            tag: "left-icons",
+                            edge: "left",
+                            display: "icons"
+                        },
+                        {
+                            tag: "right-icons",
+                            edge: "right",
+                            display: "icons"
+                        },
+                        {
+                            tag: "left-titles",
+                            edge: "left",
+                            display: "titles"
+                        },
+                        {
+                            tag: "right-rotated",
+                            edge: "right",
+                            display: "rotated"
+                        }
+                    ];
+        }
+
+        function test_native_icon_and_font_scaling(data) {
+            const axis = {
+                isVertical: ["left", "right"].includes(data.edge),
+                edge: data.edge
+            };
+            windows.axis = axis;
+            windows.pluginData = {
+                verticalDisplay: data.display
+            };
+            workspaces.axis = axis;
+            wait(30);
+            const tab = suite.descendants(windows, item => "showAppIcon" in item && item.showAppIcon)[0];
+            const label = suite.descendants(tab, item => "font" in item && item.text === "Window")[0];
+            const workspace = suite.descendants(workspaces, item => "workspaceId" in item)[0];
+            const symbol = suite.descendants(workspace, item => "name" in item && "size" in item)[0];
+            verify(label !== undefined);
+            verify(symbol !== undefined);
+            for (const widget of [windows, workspaces])
+                widget.barConfig = {
+                    iconScale: 1.5,
+                    fontScale: 1.5
+                };
+            compare(tab.appIconSize, 28);
+            compare(tab.faviconSize, 23);
+            compare(label.font.pixelSize, 18);
+            compare(symbol.size, 30);
+            const launcher = suite.descendants(windows, item => "acceptMiddleClick" in item && item.text === "+")[0];
+            compare(suite.descendants(launcher, item => "font" in item && item.text === "+")[0].font.pixelSize, 18);
+            for (const widget of [windows, workspaces])
+                widget.barConfig = {
+                    iconScale: 1.5,
+                    fontScale: 1.5,
+                    maximizeWidgetIcons: true,
+                    maximizeWidgetText: true
+                };
+            compare(tab.appIconSize, 40);
+            compare(label.font.pixelSize, 24);
+            compare(symbol.size, 42);
+            wait(30);
+            const image = suite.descendants(tab, item => "backer" in item)[0];
+            for (const pair of [[windows, image], [workspaces, symbol]]) {
+                const viewport = suite.descendants(pair[0], item => "contentX" in item
+                                                                    && "flickableDirection" in item)[0];
+                const start = pair[1].mapToItem(viewport, 0, 0);
+                const end = pair[1].mapToItem(viewport, pair[1].width, pair[1].height);
+                verify(Math.min(start.x, end.x) >= -0.01 && Math.max(start.x, end.x) <= viewport.width + 0.01
+                       && Math.min(start.y, end.y) >= -0.01 && Math.max(start.y, end.y) <= viewport.height + 0.01,
+                       "scaled artwork must fit the viewport at the bar's full thickness: " + data.tag);
+            }
+            for (const widget of [windows, workspaces]) {
+                widget.barConfig = {
+                    iconScale: 0.75,
+                    fontScale: 0.8
+                };
+                widget.widgetThickness = 48;
+            }
+            compare(tab.appIconSize, 14, "inset thickness must not override the requested icon scale");
+            compare(label.font.pixelSize, 10);
+            compare(symbol.size, 16);
+            wait(30);
+            compare(suite.descendants(windows, item => "showAppIcon" in item && item.showAppIcon)[0], tab);
+            compare(suite.descendants(workspaces, item => "workspaceId" in item)[0], workspace);
+        }
+
+        function test_native_bar_rounding_data() {
+            return [
+                        {
+                            tag: "top-pill",
+                            edge: "top",
+                            style: "pills",
+                            thickness: 36,
+                            radius: 18
+                        },
+                        {
+                            tag: "top-flat",
+                            edge: "top",
+                            style: "flat",
+                            thickness: 36,
+                            radius: 8
+                        },
+                        {
+                            tag: "bottom-segments",
+                            edge: "bottom",
+                            style: "segments",
+                            thickness: 36,
+                            radius: 18
+                        },
+                        {
+                            tag: "left-compact",
+                            edge: "left",
+                            style: "pills",
+                            thickness: 26,
+                            radius: 12
+                        },
+                        {
+                            tag: "right-flat",
+                            edge: "right",
+                            style: "flat",
+                            thickness: 36,
+                            radius: 8
+                        },
+                        {
+                            tag: "right-rotated",
+                            edge: "right",
+                            style: "pills",
+                            thickness: 36,
+                            radius: 18
+                        }
+                    ];
+        }
+
+        function test_native_bar_rounding(data) {
+            const vertical = ["left", "right"].includes(data.edge);
+            windows.pluginData = {
+                verticalDisplay: data.tag === "right-rotated" ? "rotated" : "icons"
+            };
+            for (const widget of [windows, workspaces]) {
+                widget.axis = {
+                    isVertical: vertical,
+                    edge: data.edge
+                };
+                widget.widgetThickness = data.thickness;
+                widget.barConfig = {
+                    widgetStyle: data.style
+                };
+            }
+            wait(30);
+            const tab = suite.descendants(windows, item => "showAppIcon" in item && item.showAppIcon)[0];
+            const workspace = suite.descendants(workspaces, item => "workspaceId" in item)[0];
+            const controls = suite.descendants(windows, item => "acceptMiddleClick" in item && !item.showAppIcon);
+            for (const button of [tab, workspace, ...controls]) {
+                compare(button.radius, data.radius);
+                compare(button.topLeftRadius, data.radius);
+                compare(button.bottomRightRadius, data.radius);
+                const focusRing = suite.descendants(button, item => "border" in item && item.border.width === 2)[0];
+                compare(focusRing.radius, Math.max(0, data.radius - 2));
+            }
+            for (const widget of [windows, workspaces]) {
+                widget.widgetThickness = 36;
+                widget.barConfig = {
+                    widgetStyle: "pills"
+                };
+            }
+            tryCompare(tab, "radius", 18, 1000, "rounding follows host changes without replacing the delegate");
+            compare(workspace.radius, 18);
+            mousePress(tab, tab.width / 2, tab.height / 2, Qt.LeftButton);
+            compare(tab.pressed, true);
+            compare(tab.radius, 8, "press state reaches the native bar surface");
+            mouseRelease(tab, tab.width / 2, tab.height / 2, Qt.LeftButton);
+            compare(tab.radius, 18);
+            compare(suite.descendants(windows, item => "showAppIcon" in item && item.showAppIcon)[0], tab);
+            compare(suite.descendants(workspaces, item => "workspaceId" in item)[0], workspace);
+        }
+
+        function test_nonbar_buttons_retain_generic_rounding() {
+            const fixture = createTemporaryObject(nonbarButtons, suite);
+            verify(fixture !== null);
+            compare(fixture.navigation.barStyle, "");
+            compare(fixture.navigation.radius, Math.min(Theme.cornerRadius, 18));
+            compare(fixture.workspace.barStyle, "");
+            compare(fixture.workspace.radius, Theme.cornerRadius);
         }
 
         function test_scroll_follows_dux_per_bar_workspace_option() {

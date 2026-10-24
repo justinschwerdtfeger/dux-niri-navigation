@@ -33,6 +33,10 @@ NavigationHost {
             reorderBusy: niri.reorderBusy
             maximumWidth: navigation.stripLength
             buttonHeight: navigation.widgetThickness
+            crossAxisSize: Math.max(navigation.widgetThickness, navigation.barThickness)
+            barStyle: navigation.barWidgetStyle
+            tabIconSize: navigation.iconSizeLarge
+            tabTextSize: navigation.textSize
             referenceWidth: navigation.parentScreen?.width ?? 1920
             preferredTabWidth: Number(navigation.pluginData.tabWidth) || 240
             parentScreen: navigation.parentScreen
