@@ -31,12 +31,13 @@ format:
 SHELLCHECK ?= shellcheck
 QMLTESTRUNNER ?= qmltestrunner
 DEVCONTAINER ?= devcontainer
+DEVCONTAINER_UP_ARGS ?=
 CONTAINER_ENGINE ?= docker
 
 dev-up:
 	@common_dir="$$(git rev-parse --path-format=absolute --git-common-dir)" && \
 	$(DEVCONTAINER) up --docker-path $(CONTAINER_ENGINE) --workspace-folder "$(CURDIR)" \
-		--mount "type=bind,source=$$common_dir,target=$$common_dir"
+		--mount "type=bind,source=$$common_dir,target=$$common_dir" $(DEVCONTAINER_UP_ARGS)
 
 dev-check:
 	$(DEVCONTAINER) exec --docker-path $(CONTAINER_ENGINE) --workspace-folder "$(CURDIR)" make check test-qml

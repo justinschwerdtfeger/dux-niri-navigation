@@ -50,7 +50,7 @@ The strip shows that monitor’s active workspace, including its unfocused activ
 
 On vertical bars, **Vertical tab display** defaults to **Icons only**, with titles in tooltips. Select **Rotated titles** for labels along a narrow bar, or **Normal title rows** on a wider bar. Dragging, focus, close, launcher, and overflow work along the selected bar axis. The horizontal appearance is retained.
 
-Buttons and the horizontal pill fill the DMS bar height. Adjust **Size** for height, and **Padding/Remove Widget Padding** for horizontal padding. The launcher follows DMS’s focused monitor and may activate an existing app window.
+Buttons use Dux’s widget thickness. **Widget inset** controls their distance from the bar edges; the bar’s padding controls space at the widget ends. Each plugin can override that end padding in its settings without changing thickness or inset. The launcher follows DMS’s focused monitor and may activate an existing app window.
 
 ## Workspaces
 
@@ -62,7 +62,7 @@ Register and connect the existing TabCtl extension/native helper, and confirm `t
 
 ## Reload
 
-Use the plugin’s Reload button, or on the inspected DMS 1.6.2 host:
+Use the plugin’s Reload button, or the plugin IPC commands:
 
 ```bash
 dms ipc call plugins reload justinNavigation

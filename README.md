@@ -37,7 +37,7 @@ In **DMS Settings → Plugins → Justin Window Tabs**, set **Standalone sidebar
 
 **Sidebar title width** defaults to 240 px (160–480 px, capped at half the monitor). Choose the **Sidebar side** and **Sidebar monitor**. Expandable mode overlays windows beyond the compact rail by default; enable **Push windows aside when expanded** to reserve the wider area instead. Preferences apply independently of ordinary bar widgets, which remain available. The sidebar defaults **Off**; no desktop layout is changed by installing the feature.
 
-The sidebar uses the same output-scoped tabs, focus/close actions, favicons, dragging, overflow, launcher, and DMS theme. Width is independent of DMS's **Bar → Appearance → Spacing → Size**, whose DMS 1.6 slider only allows a narrow widget area. Disconnected selected monitors produce no sidebar until they return. Expansion/collapse uses DMS’s animation speed and easing with a title fade inside a stable surface, while preserving icon sizes and scrolling. Transparent space passes clicks through; push mode lets Niri handle the window-layout transition. See [Loading](docs/LOADING.md#standalone-sidebar) for setup and [Development](docs/DEVELOPMENT.md#runtime-acceptance) for live validation limits.
+The sidebar uses the same output-scoped tabs, focus/close actions, favicons, dragging, overflow, launcher, and DMS theme. Width is independent of the hosting bar’s widget thickness and inset. Disconnected selected monitors produce no sidebar until they return. Expansion/collapse uses DMS’s animation speed and easing with a title fade inside a stable surface, while preserving icon sizes and scrolling. Transparent space passes clicks through; push mode lets Niri handle the window-layout transition. See [Loading](docs/LOADING.md#standalone-sidebar) for setup and [Development](docs/DEVELOPMENT.md#runtime-acceptance) for live validation limits.
 
 ## Workspace rail
 
@@ -51,7 +51,7 @@ Empty workspaces start with `empty_dashboard`; the first observed window seeds a
 
 Helium windows can use their active page’s favicon through the existing [TabCtl](https://github.com/slastra/tabctl) extension/native helper. This requires `/usr/bin/python3` with PyGObject/Gio and a connected TabCtl Helium service. The plugin subscribes to events without polling or controlling tabs. Missing, failed, or conflicting images use the application icon.
 
-TabCtl 2.3.0 omits favicon-only notifications, so late icons can remain stale. A fix in the separate TabCtl project is active in the user's local 2.3.0.1 test build; a delayed favicon change was verified through the DMS strip. Exact-title matching and unauthenticated Qt image loading have additional limits. See [favicon compatibility](docs/DEVELOPMENT.md#favicons) and the separate-project patch record in [Configuration](docs/CONFIGURATION.md).
+TabCtl 2.3.0 omits favicon-only notifications, so late icons can remain stale. Patched extension builds can supply those events. Exact-title matching and unauthenticated Qt image loading have additional limits. See [favicon compatibility](docs/DEVELOPMENT.md#favicons) and the separate-project patch record in [Configuration](docs/CONFIGURATION.md).
 
 ## Development
 
@@ -84,7 +84,7 @@ Reload with `dms ipc call plugins reload justinNavigation` or `dms ipc call plug
 | Area                             | Files                                                                                                       |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | DMS entry points and settings    | `NavigationWidget.qml`, `NavigationSettings.qml`, `WorkspaceWidget.qml`, `workspace-plugin/`, `plugin.json` |
-| Compositor and host boundaries   | `NiriState.qml`, `NavigationHost.qml`, `BarGeometry.qml`                                                    |
+| Compositor and host boundaries   | `NiriState.qml`, `NavigationHost.qml`, `BarGeometry.qml`, `BarModel.js`                                     |
 | Window navigation                | `WindowStrip.qml`, `NavigationButton.qml`, `WindowModel.js`, `ReorderModel.js`                              |
 | Standalone window sidebar        | `SidebarDaemon.qml`, `SidebarPanel.qml`, `SidebarView.qml`, `SidebarModel.js`                               |
 | Workspace navigation             | `WorkspaceRail.qml`, `WorkspaceButton.qml`, `WorkspaceIconMenu.qml`, `WorkspaceModel.js`                    |
@@ -92,4 +92,4 @@ Reload with `dms ipc call plugins reload justinNavigation` or `dms ipc call plug
 | Session state and favicon bridge | `state/`, `BrowserModel.js`, `scripts/tabctl-favicons.py`                                                   |
 | Tooling and regression tests     | `.devcontainer/`, `scripts/`, `tests/`, `Makefile`                                                          |
 
-[Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records this refactor. [Agent guidance](AGENTS.md) sets maintenance boundaries and links the project [Dux plugin skill](skills/dms-plugin-dev/SKILL.md). Git history retains earlier implementation notes.
+[Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records the current project audit and validation. [Agent guidance](AGENTS.md) sets maintenance boundaries and links the project [Dux plugin skill](skills/dms-plugin-dev/SKILL.md). Git history retains earlier implementation notes.

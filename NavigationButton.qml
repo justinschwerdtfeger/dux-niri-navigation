@@ -212,9 +212,9 @@ BarPillSurface {
             const pos = mapToItem(null, mouse.x, mouse.y);
             pressSceneX = pos.x;
             pressSceneY = pos.y;
+            button.pressStarted(button);
             if (mouse.button === Qt.LeftButton) {
                 button.forceActiveFocus(Qt.MouseFocusReason);
-                button.pressStarted(button);
                 if (button.activateOnPress)
                     button.clicked();
             }
@@ -238,12 +238,12 @@ BarPillSurface {
                 button.tabDragMoved(button, pos.x, pos.y);
         }
         onReleased: mouse => {
-            if (draggingTab) {
+            if (mouse.button === Qt.LeftButton && draggingTab) {
                 const pos = mapToItem(null, mouse.x, mouse.y);
                 draggingTab = false;
                 button.tabDragFinished(button, pos.x, pos.y);
             }
-            if (mouse.button === Qt.LeftButton)
+            if (pressedButtons === Qt.NoButton)
                 button.pressEnded(button);
         }
         onCanceled: {

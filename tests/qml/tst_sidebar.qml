@@ -49,6 +49,7 @@ Item {
         when: windowShown
 
         function init() {
+            suite.forceActiveFocus();
             Theme.snapListModelChanges = true;
             Theme.fontSizeSmall = 12;
             Theme.shortDuration = 100;
@@ -173,6 +174,36 @@ Item {
             const expandedWhileHeld = sidebar.expanded;
             mouseRelease(launcher, 18, 18, Qt.LeftButton);
             verify(!expandedWhileHeld, "hover opening waits for launcher and overflow controls");
+            tryCompare(sidebar, "expanded", true);
+        }
+
+        function test_hover_waits_for_tab_release_data() {
+            return [
+                        {
+                            tag: "left",
+                            button: Qt.LeftButton
+                        },
+                        {
+                            tag: "middle",
+                            button: Qt.MiddleButton
+                        }
+                    ];
+        }
+
+        function test_hover_waits_for_tab_release(data) {
+            sidebar.configuration = SidebarModel.configuration({
+                                                                   sidebarMode: "expandable",
+                                                                   sidebarTrigger: "hover"
+                                                               }, 1920);
+            const button = suite.tabs()[0];
+            mouseMove(button, 18, 18);
+            mousePress(button, 18, 18, data.button);
+            wait(60);
+            const expandedWhileHeld = sidebar.expanded;
+            mouseRelease(button, 18, 18, data.button);
+            verify(!expandedWhileHeld, "every accepted tab press holds hover opening");
+            compare(sidebar.activated.length, data.button === Qt.LeftButton ? 1 : 0);
+            compare(sidebar.closed.length, data.button === Qt.MiddleButton ? 1 : 0);
             tryCompare(sidebar, "expanded", true);
         }
 
