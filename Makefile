@@ -34,7 +34,9 @@ DEVCONTAINER ?= devcontainer
 CONTAINER_ENGINE ?= docker
 
 dev-up:
-	$(DEVCONTAINER) up --docker-path $(CONTAINER_ENGINE) --workspace-folder "$(CURDIR)"
+	@common_dir="$$(git rev-parse --path-format=absolute --git-common-dir)" && \
+	$(DEVCONTAINER) up --docker-path $(CONTAINER_ENGINE) --workspace-folder "$(CURDIR)" \
+		--mount "type=bind,source=$$common_dir,target=$$common_dir"
 
 dev-check:
 	$(DEVCONTAINER) exec --docker-path $(CONTAINER_ENGINE) --workspace-folder "$(CURDIR)" make check test-qml
