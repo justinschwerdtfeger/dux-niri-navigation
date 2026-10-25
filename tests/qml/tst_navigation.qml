@@ -133,7 +133,11 @@ Item {
             strip.reorderBusy = false;
             strip.reorderRequest = null;
             strip.barEdge = "top";
+            strip.parentScreen = null;
+            strip.barThickness = 36;
+            strip.barSpacing = 0;
             rail.vertical = true;
+            rail.visible = true;
             rail.maximumWidth = 600;
             rail.pickerRequest = null;
             strip.windows = [
@@ -392,7 +396,97 @@ Item {
                     ];
         }
 
-        function test_vertical_modes_and_drag(data) {
+        function test_pointer_drag_follows_bar_axis_data() {
+            return [
+                        {
+                            tag: "horizontal",
+                            vertical: false,
+                            display: "icons",
+                            edge: "top"
+                        },
+                        {
+                            tag: "vertical-icons",
+                            vertical: true,
+                            display: "icons",
+                            edge: "left"
+                        },
+                        {
+                            tag: "vertical-titles",
+                            vertical: true,
+                            display: "titles",
+                            edge: "left"
+                        },
+                        {
+                            tag: "rotated-left",
+                            vertical: true,
+                            display: "rotated",
+                            edge: "left"
+                        },
+                        {
+                            tag: "rotated-right",
+                            vertical: true,
+                            display: "rotated",
+                            edge: "right"
+                        }
+                    ];
+        }
+
+        function test_tooltips_clear_full_bar_thickness_data() {
+            return ["top", "bottom", "left", "right"].map(edge => ({
+                tag: edge,
+                edge
+            }));
+        }
+
+            function test_tooltips_clear_full_bar_thickness(data) {
+            rail.visible = false;
+            strip.barEdge = data.edge;
+            strip.vertical = ["left", "right"].includes(data.edge);
+            strip.buttonHeight = 28;
+            strip.barThickness = 64;
+            strip.barSpacing = 8;
+            strip.parentScreen = {
+            width: 1000,
+            height: 500
+        };
+            wait(30);
+            const button = suite.tabButtons()[0];
+            mouseMove(button, button.width / 2, button.height / 2);
+            strip.showTooltip(button);
+            verify(strip.activeTooltip !== null);
+            const tip = strip.activeTooltip;
+            if (data.edge === "top")
+            verify(tip.targetY >= 72, "tooltip clears the bar and outer spacing");
+            else if (data.edge === "bottom")
+            verify(tip.targetY + tip.implicitHeight <= 428, "tooltip clears the bottom bar");
+            else if (data.edge === "left")
+            verify(tip.targetX >= 72);
+            else
+            verify(tip.targetX <= 928);
+        }
+
+            function test_pointer_drag_follows_bar_axis(data) {
+            rail.visible = false;
+            strip.vertical = data.vertical;
+            strip.verticalDisplay = data.display;
+            strip.barEdge = data.edge;
+            wait(30);
+            const first = suite.tabButtons()[0];
+            const point = first.parent.mapToItem(suite, first.parent.width / 2, first.parent.height / 2);
+            const distance = strip.tabLayout.starts[1];
+            const endX = point.x + (data.vertical ? 0 : distance);
+            const endY = point.y + (data.vertical ? distance : 0);
+            mousePress(suite, point.x, point.y, Qt.LeftButton);
+            compare(strip.activations, 1, "focus occurs on mouse down");
+            mouseMove(suite, endX, endY);
+            const dragged = strip.dragWindowId;
+            mouseRelease(suite, endX, endY, Qt.LeftButton);
+            compare(dragged, 1, "pointer movement along the bar starts a drag");
+            compare(strip.reorderRequest, [1, 2, true]);
+            compare(strip.activations, 1, "release does not focus twice");
+        }
+
+            function test_vertical_modes_and_drag(data) {
             strip.buttonHeight = data.crossSize ?? 36;
             strip.verticalDisplay = data.display;
             strip.vertical = true;
@@ -406,7 +500,7 @@ Item {
             compare(first.parent.width, strip.buttonHeight);
             verify(first.parent.height > 0);
             if (data.crossSize)
-                verify(first.parent.height <= 36, "wide bars should retain compact title rows");
+            verify(first.parent.height <= 36, "wide bars should retain compact title rows");
             verify(second.parent.y > first.parent.y);
             // Grab the visible wrapper center; rotated local origins differ.
             const point = first.parent.mapToItem(null, first.parent.width / 2, first.parent.height / 2);
@@ -433,22 +527,22 @@ Item {
             compare(strip.height, strip.buttonHeight);
         }
 
-        function test_vertical_overflow_and_empty_launcher() {
+            function test_vertical_overflow_and_empty_launcher() {
             strip.vertical = true;
             strip.maximumWidth = 180;
             strip.windows = [1, 2, 3, 4, 5].map(id => ({
-                id: id,
-                title: String(id),
-                appId: ""
-            }));
+            id: id,
+            title: String(id),
+            appId: ""
+        }));
             wait(30);
             verify(strip.showArrows);
             compare(strip.height, 180);
             strip.scrollBy(40);
             compare(strip.scrollOffset, 40);
             strip.windows = strip.windows.map(window => Object.assign({}, window, {
-                                                                          title: "Updated"
-                                                                      }));
+            title: "Updated"
+        }));
             wait(30);
             compare(strip.scrollOffset, 40, "unchanged IDs preserve manual overflow browsing");
             strip.windows = [];
@@ -457,39 +551,39 @@ Item {
             verify(!strip.showArrows);
         }
 
-        function test_workspace_scale_keeps_last_active_workspace_visible_data() {
+            function test_workspace_scale_keeps_last_active_workspace_visible_data() {
             return [
-                        {
-                            tag: "horizontal",
-                            vertical: false
-                        },
-                        {
-                            tag: "vertical",
-                            vertical: true
-                        }
-                    ];
+            {
+            tag: "horizontal",
+            vertical: false
+        },
+            {
+            tag: "vertical",
+            vertical: true
+        }
+            ];
         }
 
-        function test_workspace_scale_keeps_last_active_workspace_visible(data) {
+            function test_workspace_scale_keeps_last_active_workspace_visible(data) {
             const growingRail = createTemporaryObject(overflowingWorkspaceRail, suite, {
-                                                          vertical: data.vertical,
-                                                          iconSize: 18
-                                                      });
+            vertical: data.vertical,
+            iconSize: 18
+        });
             verify(growingRail !== null);
             const viewport = suite.descendants(growingRail, item => "contentX" in item
-                                                                    && "flickableDirection" in item)[0];
+            && "flickableDirection" in item)[0];
             function activeButton() {
-                return suite.descendants(growingRail, item => "workspaceId" in item && item.workspaceId === 8)[0];
-            }
+            return suite.descendants(growingRail, item => "workspaceId" in item && item.workspaceId === 8)[0];
+        }
             function activeVisible() {
-                const button = activeButton();
-                if (!button)
-                    return false;
-                const pos = button.mapToItem(viewport, 0, 0);
-                const start = data.vertical ? pos.y : pos.x;
-                const end = start + (data.vertical ? button.height : button.width);
-                return start >= -0.01 && end <= (data.vertical ? viewport.height : viewport.width) + 0.01;
-            }
+            const button = activeButton();
+            if (!button)
+            return false;
+            const pos = button.mapToItem(viewport, 0, 0);
+            const start = data.vertical ? pos.y : pos.x;
+            const end = start + (data.vertical ? button.height : button.width);
+            return start >= -0.01 && end <= (data.vertical ? viewport.height : viewport.width) + 0.01;
+        }
             tryVerify(activeVisible);
             const before = activeButton();
             const extent = data.vertical ? viewport.height : viewport.width;
@@ -504,7 +598,7 @@ Item {
             verify(activeVisible(), "reducing scale keeps the selection visible too");
         }
 
-        function test_horizontal_workspaces_preserve_buttons_and_picker_anchor() {
+            function test_horizontal_workspaces_preserve_buttons_and_picker_anchor() {
             rail.vertical = false;
             rail.maximumWidth = 60;
             wait(30);
@@ -521,5 +615,5 @@ Item {
             compare(rail.pickerRequest[0], 10);
             compare(rail.pickerRequest[1], after[0]);
         }
-    }
-}
+        }
+        }

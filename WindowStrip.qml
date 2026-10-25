@@ -334,8 +334,8 @@ Item {
             return;
         }
         const pos = anchor.mapToItem(null, anchor.width / 2, anchor.height);
-        const tooltipY = barEdge === "bottom" ? parentScreen.height - buttonHeight - barSpacing - gap
-                                                - activeTooltip.implicitHeight : buttonHeight + barSpacing + gap;
+        const tooltipY = barEdge === "bottom" ? parentScreen.height - barThickness - barSpacing - gap
+                                                - activeTooltip.implicitHeight : barThickness + barSpacing + gap;
         activeTooltip.show(anchor.tooltip, pos.x, tooltipY, parentScreen, false, false);
     }
 
@@ -365,11 +365,7 @@ Item {
         cancelTabDrag();
         droppedPreview = null;
         hideTooltip(null);
-        wheelState = {
-            axis: "",
-            source: "",
-            value: 0
-        };
+        resetWheelState();
     }
 
     function setScrollOffset(offset) {
@@ -384,11 +380,7 @@ Item {
         cancelTabDrag();
         droppedPreview = null;
         followActive = true;
-        wheelState = {
-            axis: "",
-            source: "",
-            value: 0
-        };
+        resetWheelState();
         viewport.contentX = 0;
         viewport.contentY = 0;
         Qt.callLater(revealActive);
@@ -526,6 +518,7 @@ Item {
                         opaqueBackground: strip.pressedTabAnchor === tabButton || strip.dragWindowId === tab.windowId
                                           || strip.droppedPreview?.sourceId === tab.windowId
                         dragEnabled: strip.available && !strip.reorderBusy
+                        dragVertical: strip.vertical
                         text: tab.title
                         selected: tab.active
                         urgent: tab.urgent
@@ -551,6 +544,15 @@ Item {
         }
     }
 
+    component StripControl: NavigationButton {
+        textSize: strip.tabTextSize
+        barStyle: strip.barStyle
+        width: strip.vertical ? strip.buttonHeight : strip.controlWidth
+        height: strip.vertical ? strip.controlWidth : strip.buttonHeight
+        onTooltipRequested: anchor => strip.showTooltip(anchor)
+        onTooltipDismissed: anchor => strip.hideTooltip(anchor)
+    }
+
     Grid {
         id: controls
         // Empty horizontal columns retain spacing even with hidden arrows.
@@ -560,41 +562,23 @@ Item {
         y: strip.vertical ? strip.height - height : 0
         spacing: strip.gap
 
-        NavigationButton {
-            textSize: strip.tabTextSize
-            barStyle: strip.barStyle
-            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
-            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
+        StripControl {
             visible: strip.showArrows
-            onTooltipRequested: anchor => strip.showTooltip(anchor)
-            onTooltipDismissed: anchor => strip.hideTooltip(anchor)
             text: strip.vertical ? "↑" : "‹"
             tooltip: "Earlier windows"
             enabled: strip.scrollOffset > 0
             onClicked: strip.scrollBy(-strip.viewportLength * 0.8)
         }
 
-        NavigationButton {
-            textSize: strip.tabTextSize
-            barStyle: strip.barStyle
-            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
-            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
+        StripControl {
             visible: strip.showArrows
-            onTooltipRequested: anchor => strip.showTooltip(anchor)
-            onTooltipDismissed: anchor => strip.hideTooltip(anchor)
             text: strip.vertical ? "↓" : "›"
             tooltip: "Later windows"
             enabled: strip.scrollOffset < strip.tabLayout.totalWidth - strip.viewportLength
             onClicked: strip.scrollBy(strip.viewportLength * 0.8)
         }
 
-        NavigationButton {
-            textSize: strip.tabTextSize
-            barStyle: strip.barStyle
-            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
-            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
-            onTooltipRequested: anchor => strip.showTooltip(anchor)
-            onTooltipDismissed: anchor => strip.hideTooltip(anchor)
+        StripControl {
             text: "+"
             tooltip: "Open app launcher"
             enabled: strip.available

@@ -32,6 +32,7 @@ BarPillSurface {
     property string tooltip: text
     property bool acceptMiddleClick: false
     property bool dragEnabled: false
+    property bool dragVertical: false
     property bool activateOnPress: false
     property bool opaqueBackground: false
     readonly property color highlightColor: selected || hovered ? Theme.withAlpha(Theme.primary, down ? 0.25 : 0.12) :
@@ -212,6 +213,7 @@ BarPillSurface {
             pressSceneX = pos.x;
             pressSceneY = pos.y;
             if (mouse.button === Qt.LeftButton) {
+                button.forceActiveFocus(Qt.MouseFocusReason);
                 button.pressStarted(button);
                 if (button.activateOnPress)
                     button.clicked();
@@ -225,7 +227,8 @@ BarPillSurface {
             // qmllint disable missing-property
             const threshold = Qt.styleHints.startDragDistance;
             // qmllint enable missing-property
-            if (!draggingTab && Math.abs(pos.x - pressSceneX) >= threshold) {
+            const distance = button.dragVertical ? pos.y - pressSceneY : pos.x - pressSceneX;
+            if (!draggingTab && Math.abs(distance) >= threshold) {
                 draggedTab = true;
                 draggingTab = true;
                 button.dismissTooltip();

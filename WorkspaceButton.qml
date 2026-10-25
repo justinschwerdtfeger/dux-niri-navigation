@@ -66,6 +66,7 @@ BarPillSurface {
         height: button.hitHeight
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressed: button.forceActiveFocus(Qt.MouseFocusReason)
         cursorShape: Qt.PointingHandCursor
         onClicked: mouse => {
             if (mouse.button === Qt.RightButton)

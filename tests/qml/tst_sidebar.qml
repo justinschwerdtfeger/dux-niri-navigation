@@ -126,6 +126,26 @@ Item {
             compare(sidebar.expanded, false, "a brief crossing should not open the sidebar");
         }
 
+        function test_hover_entry_waits_for_existing_interaction() {
+            sidebar.configuration = SidebarModel.configuration({
+                                                                   sidebarMode: "expandable",
+                                                                   sidebarTrigger: "hover"
+                                                               }, 1920);
+            sidebar.reorderBusy = true;
+            mouseMove(sidebar, 20, 20);
+            wait(60);
+            verify(!sidebar.expanded, "entering during acknowledgment must not start the open timer");
+            sidebar.reorderBusy = false;
+            tryCompare(sidebar, "expanded", true);
+        }
+
+        function test_mouse_expansion_accepts_escape_without_forced_focus() {
+            mouseClick(suite.expandButton());
+            verify(sidebar.expanded);
+            keyClick(Qt.Key_Escape);
+            verify(!sidebar.expanded, "mouse interaction must establish keyboard focus");
+        }
+
         function test_hover_collapse_preserves_overflow_position_and_buttons() {
             Theme.snapListModelChanges = false;
             sidebar.configuration = SidebarModel.configuration({

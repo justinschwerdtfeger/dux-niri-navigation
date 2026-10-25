@@ -54,10 +54,9 @@ Rectangle {
     }
     onExpandableChanged: resetExpansion()
     onConfigurationChanged: {
-        openDelay.stop();
-        closeDelay.stop();
         if (!expandable)
             expanded = false;
+        updateHover(hover.hovered);
     }
 
     function resetExpansion() {
@@ -77,11 +76,11 @@ Rectangle {
     function updateHover(hovered) {
         openDelay.stop();
         closeDelay.stop();
-        if (!expandable || configuration.trigger !== "hover")
+        if (!expandable || configuration.trigger !== "hover" || interactionHeld)
             return;
         if (hovered && !expanded)
             openDelay.restart();
-        else if (!hovered && expanded && !interactionHeld)
+        else if (!hovered && expanded)
             closeDelay.restart();
     }
 
