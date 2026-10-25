@@ -123,17 +123,17 @@ Item {
     readonly property real scrollOffset: vertical ? viewport.contentY : viewport.contentX
     property real dragGrabOffset: 0
     property var dragTarget: null
-    property var pressedTabAnchor: null
+    property var pressedAnchor: null
     property var droppedPreview: null
     readonly property var tabVisualPositions: WindowModel.tabVisualPositions(windows, tabLayout, dragWindowId
                                                                              ?? droppedPreview?.sourceId ?? null,
                                                                              dragTarget ?? droppedPreview?.target
                                                                              ?? null, gap)
 
-    function endTabPress(anchor) {
-        if (pressedTabAnchor !== anchor)
+    function endPress(anchor) {
+        if (pressedAnchor !== anchor)
             return;
-        pressedTabAnchor = null;
+        pressedAnchor = null;
         Qt.callLater(revealActive);
     }
 
@@ -141,7 +141,7 @@ Item {
         dragWindowId = null;
         dragAnchor = null;
         dragTarget = null;
-        pressedTabAnchor = null;
+        pressedAnchor = null;
     }
 
     function startTabDrag(anchor, windowId, sceneX, sceneY) {
@@ -397,7 +397,7 @@ Item {
     }
 
     function revealActive() {
-        if (viewport.moving || dragWindowId !== null || pressedTabAnchor !== null)
+        if (viewport.moving || dragWindowId !== null || pressedAnchor !== null)
             return;
         // A new rightmost tab can be temporarily clipped while the strip
         // grows. Revealing it now would scroll existing tabs and then undo
@@ -515,7 +515,7 @@ Item {
                         showAppIcon: true
                         acceptMiddleClick: true
                         activateOnPress: true
-                        opaqueBackground: strip.pressedTabAnchor === tabButton || strip.dragWindowId === tab.windowId
+                        opaqueBackground: strip.pressedAnchor === tabButton || strip.dragWindowId === tab.windowId
                                           || strip.droppedPreview?.sourceId === tab.windowId
                         dragEnabled: strip.available && !strip.reorderBusy
                         dragVertical: strip.vertical
@@ -527,9 +527,9 @@ Item {
                         onTooltipDismissed: anchor => strip.hideTooltip(anchor)
                         onClicked: strip.windowActivated(tab.windowId)
                         onPressStarted: anchor => {
-                            strip.pressedTabAnchor = anchor;
+                            strip.pressedAnchor = anchor;
                         }
-                        onPressEnded: anchor => strip.endTabPress(anchor)
+                        onPressEnded: anchor => strip.endPress(anchor)
                         onMiddleClicked: strip.windowCloseRequested(tab.windowId)
                         onTabDragStarted: (anchor, x, y) => strip.startTabDrag(anchor, tab.windowId, x, y)
                         onTabDragMoved: (anchor, x, y) => strip.moveTabDrag(anchor, x, y)
@@ -551,6 +551,8 @@ Item {
         height: strip.vertical ? strip.controlWidth : strip.buttonHeight
         onTooltipRequested: anchor => strip.showTooltip(anchor)
         onTooltipDismissed: anchor => strip.hideTooltip(anchor)
+        onPressStarted: anchor => strip.pressedAnchor = anchor
+        onPressEnded: anchor => strip.endPress(anchor)
     }
 
     Grid {

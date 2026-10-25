@@ -226,22 +226,18 @@ test('floating toggles remove and restore tabs without changing workspace lifeti
 test('strip grows without arrows until content exceeds its ceiling', () => {
     assert.deepEqual(plain(model.stripGeometry(0, 640, 40, 4)), {
         width: 40,
-        viewportWidth: 0,
         showArrows: false,
     });
     assert.deepEqual(plain(model.stripGeometry(200, 640, 40, 4)), {
         width: 244,
-        viewportWidth: 200,
         showArrows: false,
     });
     assert.deepEqual(plain(model.stripGeometry(596, 640, 40, 4)), {
         width: 640,
-        viewportWidth: 596,
         showArrows: false,
     });
     assert.deepEqual(plain(model.stripGeometry(597, 640, 40, 4)), {
         width: 640,
-        viewportWidth: 508,
         showArrows: true,
     });
     assert.equal(model.stripGeometry(2000, 1920, 40, 4).width, 1920);
@@ -250,34 +246,13 @@ test('strip grows without arrows until content exceeds its ceiling', () => {
 test('host width reductions keep the launcher inside and suppress controls that cannot fit', () => {
     for (const width of [140, 240, 640]) {
         const layout = model.stripGeometry(1000, width, 40, 4);
-        const controls = layout.showArrows ? 3 : 1;
         assert.equal(layout.width, width);
-        assert.equal(layout.viewportWidth + controls * (40 + 4), width);
+        assert.equal(layout.showArrows, true);
     }
     const narrow = model.stripGeometry(1000, 100, 40, 4);
     assert.equal(narrow.showArrows, false);
-    assert.equal(narrow.viewportWidth, 56);
     const relaxed = model.stripGeometry(200, 640, 40, 4);
     assert.equal(relaxed.showArrows, false);
-});
-
-test('left strip reserves launcher, music, gaps, and actual pill padding', () => {
-    const budget = model.barWidthBudget(1920, 'left', 0, 0, 0, 0, [48, 200], 4, 16);
-    assert.equal(budget, 1632);
-    assert.equal(budget + 32 + 48 + 200 + 8, 1920);
-    assert.equal(model.barWidthBudget(1920, 'left', 0, 0, 0, 0, [48], 4, 16), 1836);
-});
-
-test('empty center containers do not restrict growth and zero insets leave no artificial gap', () => {
-    assert.equal(model.barWidthBudget(1920, 'left', 0, 960, 0, 0, [], 4, 0), 1920);
-    assert.equal(model.barWidthBudget(1800, 'left', 0, 900, 0, 0, [], 4, 10), 1780);
-});
-
-test('occupied adjacent sections constrain growth on the correct side', () => {
-    assert.equal(model.barWidthBudget(1920, 'left', 0, 800, 300, 200, [48], 4, 10), 724);
-    assert.equal(model.barWidthBudget(1920, 'right', 200, 800, 300, 0, [48], 4, 10), 744);
-    assert.equal(model.barWidthBudget(1920, 'center', 200, 0, 0, 300, [48], 4, 10), 1240);
-    assert.equal(model.barWidthBudget(100, 'left', 0, 0, 0, 90, [48], 4, 10), 0);
 });
 
 test('wheel navigation uses either axis, normal widget direction, and DMS reverse scrolling', () => {
@@ -287,6 +262,26 @@ test('wheel navigation uses either axis, normal widget direction, and DMS revers
     assert.equal(model.wheelNavigation(empty, -120, 10, 0, 0, false).direction, 1);
     assert.equal(model.wheelNavigation(empty, 0, -120, 0, 0, true).direction, -1);
     assert.equal(model.wheelNavigation(empty, 0, 0, 0, 0, false).direction, 0);
+});
+
+test('empty wheel phase events preserve partial progress without repeating complete steps', () => {
+    const empty = { axis: '', source: '', value: 0 };
+    for (const deltas of [
+        [60, 0, 0, 0],
+        [0, 60, 0, 0],
+        [0, 0, 25, 0],
+        [0, 0, 0, 25],
+    ]) {
+        const partial = model.wheelNavigation(empty, ...deltas, false);
+        const phase = model.wheelNavigation(partial, 0, 0, 0, 0, false);
+        assert.deepEqual(plain(phase), plain(partial));
+        const complete = model.wheelNavigation(phase, ...deltas, false);
+        assert.equal(complete.steps, 1);
+        assert.equal(complete.direction, -1);
+        const end = model.wheelNavigation(complete, 0, 0, 0, 0, false);
+        assert.equal(end.steps, 0);
+        assert.equal(end.direction, 0);
+    }
 });
 
 test('wheel navigation accumulates smooth input and resets across unit or axis changes', () => {

@@ -154,62 +154,21 @@ function tabPositions(widths, gap) {
 
 // Reserve arrows only after tabs and the launcher exceed the width ceiling.
 function stripGeometry(contentWidth, maximumWidth, controlWidth, gap) {
-    if (contentWidth <= 0) return { width: controlWidth, viewportWidth: 0, showArrows: false };
+    if (contentWidth <= 0) return { width: controlWidth, showArrows: false };
     const naturalWidth = contentWidth + controlWidth + gap;
     const width = Math.min(maximumWidth, naturalWidth);
     // On an unusually narrow host, keep the launcher and allow dragging
     // rather than placing arrows outside the widget.
     const showArrows = naturalWidth > maximumWidth && width > 3 * (controlWidth + gap);
-    const controls = showArrows ? 3 : 1;
-    return {
-        width: width,
-        showArrows: showArrows,
-        viewportWidth: Math.max(0, width - controls * (controlWidth + gap)),
-    };
-}
-
-// Bar content width already excludes host frame/inset margins. Only occupied
-// sections constrain growth; an empty center's full-size container does not.
-function barWidthBudget(
-    barWidth,
-    section,
-    leftWidth,
-    centerStart,
-    centerWidth,
-    rightWidth,
-    siblingWidths,
-    gap,
-    padding,
-) {
-    let sectionWidth = barWidth;
-    if (section === 'left') {
-        if (rightWidth > 0) sectionWidth = Math.min(sectionWidth, barWidth - rightWidth - gap);
-        if (centerWidth > 0) sectionWidth = Math.min(sectionWidth, centerStart - gap);
-    } else if (section === 'right') {
-        if (leftWidth > 0) sectionWidth = Math.min(sectionWidth, barWidth - leftWidth - gap);
-        if (centerWidth > 0)
-            sectionWidth = Math.min(sectionWidth, barWidth - centerStart - centerWidth - gap);
-    } else {
-        // A centered section must fit on both sides of the bar midpoint.
-        sectionWidth =
-            2 *
-            Math.max(
-                0,
-                Math.min(
-                    barWidth / 2 - (leftWidth > 0 ? leftWidth + gap : 0),
-                    barWidth / 2 - (rightWidth > 0 ? rightWidth + gap : 0),
-                ),
-            );
-    }
-    const siblings = siblingWidths.reduce((sum, width) => sum + width, 0);
-    return Math.max(
-        0,
-        Math.floor(sectionWidth - siblings - siblingWidths.length * gap - padding * 2),
-    );
+    return { width, showArrows };
 }
 
 // One angle-based notch is always 120 units, even with accompanying pixel data.
 function wheelNavigation(previous, angleX, angleY, pixelX, pixelY, reverse, reverseWidget = false) {
+    // Touchpad phase markers can contain no movement. Preserve the selected
+    // axis and partial progress, but never replay the last completed step.
+    if (angleX === 0 && angleY === 0 && pixelX === 0 && pixelY === 0)
+        return Object.assign({}, previous, { direction: 0, steps: 0 });
     const hasAngle = angleX !== 0 || angleY !== 0;
     const axis =
         Math.abs(hasAngle ? angleX : pixelX) > Math.abs(hasAngle ? angleY : pixelY) ? 'x' : 'y';
@@ -274,6 +233,5 @@ function workspaceWindows(windows, workspace) {
                 ? window.id === workspace.active_window_id
                 : !!window.is_focused,
         urgent: !!window.is_urgent,
-        floating: !!window.is_floating,
     }));
 }

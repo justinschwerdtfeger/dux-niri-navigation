@@ -146,6 +146,36 @@ Item {
             verify(!sidebar.expanded, "mouse interaction must establish keyboard focus");
         }
 
+        function test_hover_waits_for_expand_button_release() {
+            sidebar.configuration = SidebarModel.configuration({
+                                                                   sidebarMode: "expandable",
+                                                                   sidebarTrigger: "hover"
+                                                               }, 1920);
+            const button = suite.expandButton();
+            mouseMove(button, 18, 18);
+            mousePress(button, 18, 18, Qt.LeftButton);
+            wait(60);
+            const expandedWhileHeld = sidebar.expanded;
+            mouseRelease(button, 18, 18, Qt.LeftButton);
+            verify(!expandedWhileHeld, "hover opening waits for the expansion button too");
+            verify(sidebar.expanded, "release still activates the expansion button");
+        }
+
+        function test_hover_waits_for_launcher_release() {
+            sidebar.configuration = SidebarModel.configuration({
+                                                                   sidebarMode: "expandable",
+                                                                   sidebarTrigger: "hover"
+                                                               }, 1920);
+            const launcher = descendants(sidebar, item => "tooltip" in item && item.tooltip === "Open app launcher")[0];
+            mouseMove(launcher, 18, 18);
+            mousePress(launcher, 18, 18, Qt.LeftButton);
+            wait(60);
+            const expandedWhileHeld = sidebar.expanded;
+            mouseRelease(launcher, 18, 18, Qt.LeftButton);
+            verify(!expandedWhileHeld, "hover opening waits for launcher and overflow controls");
+            tryCompare(sidebar, "expanded", true);
+        }
+
         function test_hover_collapse_preserves_overflow_position_and_buttons() {
             Theme.snapListModelChanges = false;
             sidebar.configuration = SidebarModel.configuration({

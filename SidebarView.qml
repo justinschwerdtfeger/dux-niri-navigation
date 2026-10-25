@@ -27,8 +27,9 @@ Rectangle {
     }
     property bool animationReady: false
     readonly property bool expandable: configuration.mode === "expandable"
-    readonly property bool interactionHeld: strip.dragWindowId !== null || strip.pressedTabAnchor !== null
-                                            || reorderBusy
+    readonly property bool stripInteractionHeld: strip.dragWindowId !== null || strip.pressedAnchor !== null
+                                                 || reorderBusy
+    readonly property bool interactionHeld: stripInteractionHeld || expandButton.down
     readonly property real padding: 6
     readonly property real rowHeight: 36
     property int hoverOpenDelay: 200
@@ -128,7 +129,7 @@ Rectangle {
               ? "Collapse titles" : (sidebar.configuration.side === "left" ? "›" : "‹")
         textOpacity: sidebar.animatedWidth > sidebar.configuration.compactWidth ? sidebar.titleOpacity : 1
         tooltip: sidebar.panelGeometry.showTitles ? "Collapse window titles" : "Expand window titles"
-        enabled: !sidebar.interactionHeld
+        enabled: !sidebar.stripInteractionHeld
         onClicked: sidebar.toggleExpansion()
         onTooltipRequested: anchor => strip.showTooltip(anchor)
         onTooltipDismissed: anchor => strip.hideTooltip(anchor)

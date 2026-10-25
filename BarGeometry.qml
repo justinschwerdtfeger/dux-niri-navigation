@@ -1,5 +1,5 @@
 import QtQuick
-import "WindowModel.js" as WindowModel
+import "BarModel.js" as BarModel
 
 // Internal Dux 2.0 host adapter. Keep ancestry/layout assumptions here.
 QtObject {
@@ -22,8 +22,6 @@ QtObject {
     }
 
     readonly property var host: findHost(widget)
-    readonly property real availableWidth: vertical ? 0 : availablePrimarySize
-    readonly property real availableHeight: vertical ? availablePrimarySize : 0
     readonly property real availablePrimarySize: {
         if (!host)
             return 0;
@@ -38,9 +36,9 @@ QtObject {
         // Dux increments this as asynchronously incubated entries arrive.
         host.section.entryRevision;
         const repeater = host.section.entryRepeater;
-        const entries = repeater ? Array.from({
-                                                  length: repeater.count
-                                              }, (_, index) => repeater.itemAt(index)) : host.layout.children;
+        const entries = Array.from({
+                                       length: repeater?.count ?? 0
+                                   }, (_, index) => repeater.itemAt(index));
         const siblings = entries.filter(child => child && child !== host.wrapper && "itemData" in child
                                                  && child.visible && size(child) > 0);
         const siblingSizes = siblings.map(size);
@@ -49,39 +47,29 @@ QtObject {
         if (host.section.overflowCount > 0)
             siblingSizes.push(host.section.overflowTriggerSize);
         const padding = pillHost?.horizontalPadding ?? pillPadding;
-        return WindowModel.barWidthBudget(size(stack), section, section === "left" ? 0 : size(left), section
-                                          === "center" ? 0 : center.contentStart, section === "center" ? 0 : center.contentSize,
-                                          section === "right" ? 0 : size(right), siblingSizes, host.layout.widgetSpacing,
-                                          padding);
+        return BarModel.primaryBudget({
+                                          length: size(stack),
+                                          section,
+                                          leading: section === "left" ? 0 : size(left),
+                                          centerStart: section === "center" ? 0 : center.contentStart,
+                                          center: section === "center" ? 0 : center.contentSize,
+                                          trailing: section === "right" ? 0 : size(right),
+                                          siblings: siblingSizes,
+                                          gap: host.section.widgetSpacing,
+                                          padding
+                                      });
     }
 
     function findHost(item) {
-        let wrapper = null;
-        let layout = null;
-        while (item && item.parent) {
-            // Dux 2.0 wraps each widget in a SectionEntry. SideSection's
-            // layout Item no longer owns spacing; entries may also be parked.
+        // Both Dux 2.0 side and center sections wrap widgets in SectionEntry.
+        while (item) {
             if ("sectionContext" in item && "itemData" in item) {
                 return {
                     section: item.sectionContext,
-                    layout: item.sectionContext,
                     wrapper: item
                 };
             }
-            const parent = item.parent;
-            if (!layout && "widgetSpacing" in parent) {
-                layout = parent;
-                wrapper = item;
-            }
-            if (["leftSection", "centerSection", "rightSection"].includes(parent.objectName)) {
-                // CenterSection lays delegates out directly rather than in a Row.
-                return {
-                    section: parent,
-                    layout: layout ?? parent,
-                    wrapper: wrapper ?? item
-                };
-            }
-            item = parent;
+            item = item.parent;
         }
         return null;
     }
