@@ -31,6 +31,9 @@ for index in "${!names[@]}"; do
     fi
 done
 
+# Dux discovers manifests by ID, including archives extracted under another name.
+python3 "$repo_dir/scripts/check_installation.py" "$plugin_parent" "${ids[@]}"
+
 mkdir -p -- "$plugin_parent"
 for index in "${!names[@]}"; do
     destination="$plugin_parent/${names[$index]}"

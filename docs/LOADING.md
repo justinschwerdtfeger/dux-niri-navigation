@@ -15,7 +15,7 @@ make link-plugin
 | `JustinNavigation` | `dist/justinNavigation/` | `justinNavigation` (Justin Window Tabs) |
 | `JustinWorkspaces` | `dist/justinWorkspaces/` | `justinWorkspaces` (Justin Workspaces)  |
 
-Use `make link-plugin PLUGIN=window-tabs` or `make link-plugin PLUGIN=workspaces` to build and link only one. Keep the selected generated directory in place while linked. Rebuild after source changes before reloading DMS. Repeated calls accept matching links; every selected destination is checked before any link is created, and conflicting content is never replaced.
+Use `make link-plugin PLUGIN=window-tabs` or `make link-plugin PLUGIN=workspaces` to build and link only one. Keep the selected generated directory in place while linked. Rebuild after source changes before reloading DMS. Repeated calls accept matching links; every selected destination is checked before any link is created, and conflicting content is never replaced. Preflight also reads existing manifests under other folder names and refuses a duplicate selected plugin ID, including an extracted release archive. Only the intended matching development link is accepted; remove an old installation explicitly after inspecting it before switching installation methods.
 
 For installation without a checkout, run `make package` on a development machine and extract either versioned archive from `dist/` into the plugin directory. Each archive contains one complete plugin directory, including shared runtime files, with no symlinks or dependency on the other plugin. Install only one copy of each plugin ID; do not extract a second copy alongside an existing development link. Runtime needs DMS/Niri and supported Quickshell; packaging and lint tools are not runtime dependencies.
 
