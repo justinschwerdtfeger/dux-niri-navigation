@@ -4,7 +4,8 @@ import QtQuick
 import QtTest
 import qs.Common
 import qs.Services
-import "../.." as Plugin
+import "../../dist/justinNavigation" as Plugin
+import "../../dist/justinWorkspaces" as Workspaces
 
 Item {
     id: suite
@@ -35,7 +36,7 @@ Item {
         }
     }
 
-    Plugin.WorkspaceRail {
+    Workspaces.WorkspaceRail {
         id: rail
         y: 100
         available: true
@@ -47,7 +48,7 @@ Item {
 
     Component {
         id: overflowingWorkspaceRail
-        Plugin.WorkspaceRail {
+        Workspaces.WorkspaceRail {
             available: true
             buttonSize: 36
             crossAxisSize: 48
@@ -320,6 +321,54 @@ Item {
             verify(rail.implicitHeight <= rail.maximumHeight);
             adapter.focusWorkspace(30);
             compare(NiriService.requests.length, 0, "another output is rejected");
+        }
+
+        function test_new_workspace_plus_data() {
+            return [
+                        {
+                            tag: "horizontal",
+                            vertical: false
+                        },
+                        {
+                            tag: "vertical",
+                            vertical: true
+                        }
+                    ];
+        }
+
+        function test_new_workspace_plus(data) {
+            rail.vertical = data.vertical;
+            NiriService.allWorkspaces = NiriService.allWorkspaces.concat([
+                                                                             {
+                                                                                 id: 99,
+                                                                                 idx: 3,
+                                                                                 output: "DP-1"
+                                                                             }
+                                                                         ]);
+            rail.workspaces = adapter.outputWorkspaces;
+            rail.assignments = Qt.binding(() => adapter.workspaceIcons);
+            wait(30);
+            const button = suite.descendants(rail, item => item.workspaceId === 99)[0];
+            verify(button);
+            compare(button.iconName, "add");
+            NiriService.windows = NiriService.windows.concat([
+                                                                 {
+                                                                     id: 99,
+                                                                     workspace_id: 99,
+                                                                     app_id: "kitty"
+                                                                 }
+                                                             ]);
+            tryCompare(button, "iconName", "terminal");
+            NiriService.windows = suite.windows();
+            wait(30);
+            compare(button.iconName, "terminal", "closing the seed window retains its category");
+            adapter.setWorkspaceIcon(99, "science");
+            tryCompare(button, "iconName", "science");
+            compare(suite.descendants(rail, item => item.workspaceId === 99)[0], button);
+            NiriService.allWorkspaces = NiriService.allWorkspaces.filter(ws => ws.id !== 99);
+            rail.workspaces = adapter.outputWorkspaces;
+            wait(30);
+            verify(adapter.workspaceIcons["99"] === undefined);
         }
 
         function test_adapter_rejection_and_timeout() {

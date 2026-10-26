@@ -7,7 +7,7 @@ root = Path(__file__).resolve().parent.parent
 for script in (root / "scripts").glob("*.py"):
     compile(script.read_text(), str(script), "exec")
 ids = set()
-for package in (root, root / "workspace-plugin"):
+for package in (root / "dist/justinNavigation", root / "dist/justinWorkspaces"):
     manifest = json.loads((package / "plugin.json").read_text())
     required = ("id", "name", "description", "version", "author", "type", "settings")
     for key in required:
@@ -16,7 +16,7 @@ for package in (root, root / "workspace-plugin"):
     if manifest["id"] in ids:
         raise SystemExit("Plugin IDs must be distinct")
     ids.add(manifest["id"])
-    if package == root:
+    if manifest["id"] == "justinNavigation":
         if manifest["type"] != "composite" or set(manifest.get("components", {})) != {
             "widget",
             "daemon",
@@ -36,7 +36,4 @@ for package in (root, root / "workspace-plugin"):
     if "dankbar-widget" not in manifest.get("capabilities", []):
         raise SystemExit("Missing dankbar-widget capability")
 
-shared = root / "workspace-plugin/shared"
-if not shared.is_symlink() or shared.resolve() != root:
-    raise SystemExit("Workspace plugin's shared link must point to the repository root")
 print("Both plugin manifests and entry points are valid. QML runtime validation is separate.")

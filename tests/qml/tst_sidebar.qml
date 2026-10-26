@@ -2,8 +2,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtTest
 import qs.Common
-import "../.." as Navigation
-import "../../SidebarModel.js" as SidebarModel
+import "../../dist/justinNavigation" as Navigation
+import "../../dist/justinNavigation/SidebarModel.js" as SidebarModel
 
 Item {
     id: suite

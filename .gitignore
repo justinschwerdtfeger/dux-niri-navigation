@@ -15,4 +15,5 @@ __pycache__/
 .local/
 tmp/
 node_modules/
+dist/
 .ruff_cache/
