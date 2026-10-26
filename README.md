@@ -37,7 +37,7 @@ In **DMS Settings → Plugins → Justin Window Tabs**, set **Standalone sidebar
 
 **Sidebar title width** defaults to 240 px (160–480 px, capped at half the monitor). Choose the **Sidebar side** and **Sidebar monitor**. Expandable mode overlays windows beyond the compact rail by default; enable **Push windows aside when expanded** to reserve the wider area instead. Preferences apply independently of ordinary bar widgets, which remain available. The sidebar defaults **Off**; no desktop layout is changed by installing the feature.
 
-The sidebar uses the same output-scoped tabs, focus/close actions, favicons, dragging, overflow, launcher, and DMS theme. Width is independent of DMS's **Bar → Appearance → Spacing → Size**, whose DMS 1.6 slider only allows a narrow widget area. Disconnected selected monitors produce no sidebar until they return. Expansion/collapse uses DMS’s animation speed and easing with a title fade inside a stable surface, while preserving icon sizes and scrolling. Transparent space passes clicks through; push mode lets Niri handle the window-layout transition. See [Loading](docs/LOADING.md#standalone-sidebar) for setup and [Development](docs/DEVELOPMENT.md#runtime-acceptance) for live validation limits.
+The sidebar uses the same output-scoped tabs, focus/close actions, favicons, dragging, overflow, launcher, and DMS theme. Its width is independent of Dux's bar thickness. Disconnected selected monitors produce no sidebar until they return. Expansion/collapse uses DMS’s animation speed and easing with a title fade inside a stable surface, while preserving icon sizes and scrolling. Transparent space passes clicks through; push mode lets Niri handle the window-layout transition. See [Loading](docs/LOADING.md#standalone-sidebar) for setup and [Development](docs/DEVELOPMENT.md#runtime-acceptance) for live validation limits.
 
 ## Workspace rail
 
@@ -99,4 +99,4 @@ The output is `dist/justinNavigation/` and `dist/justinWorkspaces/`, with a vers
 
 Shared runtime files are copied into each package at build time. QML uses package-local imports, keeping singleton identity within each installed plugin. Source directories are build inputs; load the generated packages for development and runtime.
 
-[Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records this refactor. [Agent guidance](AGENTS.md) sets maintenance boundaries and links the project [Dux plugin skill](skills/dms-plugin-dev/SKILL.md). Git history retains earlier implementation notes.
+[Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records the current audit. [Agent guidance](AGENTS.md) sets maintenance boundaries and links the project [Dux plugin skill](skills/dms-plugin-dev/SKILL.md). Git history retains earlier implementation notes.

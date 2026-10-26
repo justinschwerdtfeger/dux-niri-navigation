@@ -58,7 +58,7 @@ The strip shows that monitor’s active workspace, including its unfocused activ
 
 On vertical bars, **Vertical tab display** defaults to **Icons only**, with titles in tooltips. Select **Rotated titles** for labels along a narrow bar, or **Normal title rows** on a wider bar. Dragging, focus, close, launcher, and overflow work along the selected bar axis. The horizontal appearance is retained.
 
-Buttons and the horizontal pill fill the DMS bar height. Adjust **Size** for height, and **Padding/Remove Widget Padding** for horizontal padding. The launcher follows DMS’s focused monitor and may activate an existing app window.
+Buttons use Dux's widget thickness and inset on either axis. Adjust the hosting bar's **Size**, **Widget inset**, and padding in Dux settings. Each plugin also offers an optional **Override widget padding** setting for space at its primary-axis ends. Icon/font scale and maximize options follow the hosting bar. The launcher follows DMS’s focused monitor and may activate an existing app window.
 
 ## Workspaces
 
