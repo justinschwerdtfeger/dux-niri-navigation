@@ -17,7 +17,8 @@ def check_installations(parent, selected):
         if not manifest.is_file():
             continue
         try:
-            data = json.loads(manifest.read_text())
+            # Dux strips an optional leading UTF-8 BOM before JSON parsing.
+            data = json.loads(manifest.read_text(encoding="utf-8-sig"))
         except (json.JSONDecodeError, UnicodeDecodeError):
             # Dux also ignores manifests it cannot parse.
             continue

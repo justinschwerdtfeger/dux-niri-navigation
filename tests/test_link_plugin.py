@@ -68,6 +68,22 @@ class LinkPluginTests(unittest.TestCase):
         self.assertEqual(json.loads(manifest.read_text()), {"id": "justinWorkspaces"})
         self.assertFalse((self.parent / "JustinWorkspaces").exists())
 
+    def test_bom_prefixed_release_manifests_block_duplicate_installation(self):
+        for plugin_id in ["justinNavigation", "justinWorkspaces"]:
+            with self.subTest(plugin=plugin_id):
+                release = self.parent / plugin_id
+                shutil.copytree(ROOT / "dist" / plugin_id, release)
+                manifest = release / "plugin.json"
+                original = manifest.read_bytes()
+                manifest.write_bytes(b"\xef\xbb\xbf" + original)
+                result = self.link()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(plugin_id, result.stderr)
+                self.assertEqual(manifest.read_bytes(), b"\xef\xbb\xbf" + original)
+                self.assertFalse((self.parent / "JustinNavigation").exists())
+                self.assertFalse((self.parent / "JustinWorkspaces").exists())
+                shutil.rmtree(release)
+
     def test_alternate_link_to_same_package_is_still_a_duplicate(self):
         self.parent.mkdir(parents=True)
         alternate = self.parent / "alternate"
