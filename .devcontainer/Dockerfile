@@ -8,10 +8,12 @@ RUN curl -fsSL https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedo
         ShellCheck qt6-qtdeclarative-devel qt6-qtsvg qt6-qtimageformats quickshell-0.3.1 \
     && dnf clean all
 
-ARG DMS_REVISION=justin-stable
 ARG DMS_COMMIT=0bd677b213a445d4012e37968f8beca0acd90012
-RUN git clone --depth 1 --branch "${DMS_REVISION}" --recurse-submodules \
-        https://github.com/justinschwerdtfeger/dux-shell.git /opt/dms \
+RUN git init /opt/dms \
+    && git -C /opt/dms remote add origin https://github.com/justinschwerdtfeger/dux-shell.git \
+    && git -C /opt/dms fetch --depth 1 origin "${DMS_COMMIT}" \
+    && git -C /opt/dms checkout --detach FETCH_HEAD \
+    && git -C /opt/dms submodule update --init --recursive --depth 1 \
     && git -C /opt/dms rev-parse HEAD > /opt/dms-revision \
     && test "$(cat /opt/dms-revision)" = "${DMS_COMMIT}"
 

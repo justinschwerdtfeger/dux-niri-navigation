@@ -225,7 +225,7 @@ BarPillSurface {
             // qmllint disable missing-property
             const threshold = Qt.styleHints.startDragDistance;
             // qmllint enable missing-property
-            if (!draggingTab && Math.abs(pos.x - pressSceneX) >= threshold) {
+            if (!draggingTab && Math.max(Math.abs(pos.x - pressSceneX), Math.abs(pos.y - pressSceneY)) >= threshold) {
                 draggedTab = true;
                 draggingTab = true;
                 button.dismissTooltip();

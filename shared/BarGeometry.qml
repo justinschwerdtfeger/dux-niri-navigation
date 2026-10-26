@@ -22,8 +22,6 @@ QtObject {
     }
 
     readonly property var host: findHost(widget)
-    readonly property real availableWidth: vertical ? 0 : availablePrimarySize
-    readonly property real availableHeight: vertical ? availablePrimarySize : 0
     readonly property real availablePrimarySize: {
         if (!host)
             return 0;

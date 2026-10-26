@@ -274,6 +274,5 @@ function workspaceWindows(windows, workspace) {
                 ? window.id === workspace.active_window_id
                 : !!window.is_focused,
         urgent: !!window.is_urgent,
-        floating: !!window.is_floating,
     }));
 }

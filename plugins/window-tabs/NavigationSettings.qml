@@ -114,8 +114,7 @@ PluginSettings {
     SelectionSetting {
         settingKey: "verticalDisplay"
         label: "Vertical tab display"
-        description:
-            "Applies to bar widgets. DMS 1.6 limits their width; use the standalone sidebar for normal title rows."
+        description: "Applies to bar widgets. Use the standalone sidebar for title rows with an independent width."
         options: [
             {
                 label: "Icons only",
