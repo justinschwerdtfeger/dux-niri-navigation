@@ -22,7 +22,7 @@ test('unchanged snapshots and repeated selections keep shared assignment identit
     );
     assert.notEqual(replaced, state);
     assert.equal(Object.hasOwn(replaced, '13'), false);
-    assert.equal(model.iconFor(replaced, 14), 'empty_dashboard');
+    assert.equal(model.iconFor(replaced, 14), 'add');
 });
 
 test('rail scopes and orders workspaces, retaining active and trailing empty workspaces', () => {
@@ -45,7 +45,7 @@ test('rail scopes and orders workspaces, retaining active and trailing empty wor
 
 test('first observed window seeds a monochrome category; later windows and closure keep it stable', () => {
     let state = model.reconcile({}, workspaces, []);
-    assert.equal(model.iconFor(state, 11), 'empty_dashboard');
+    assert.equal(model.iconFor(state, 11), 'add');
     const windows = [
         { id: 9, workspace_id: 11, app_id: 'kitty' },
         { id: 5, workspace_id: 11, app_id: 'org.mozilla.firefox' },
@@ -58,7 +58,7 @@ test('first observed window seeds a monochrome category; later windows and closu
     assert.equal(model.iconFor(state, 11), 'web');
     state = model.reconcile(state, workspaces, []);
     assert.equal(model.iconFor(state, 11), 'web');
-    assert.equal(model.iconFor(state, 13), 'empty_dashboard');
+    assert.equal(model.iconFor(state, 13), 'add');
 });
 
 test('custom icons follow IDs through renumbering and output movement, then disappear with workspace', () => {
@@ -78,7 +78,7 @@ test('custom icons follow IDs through renumbering and output movement, then disa
     assert.equal(Object.hasOwn(state, '11'), false);
     assert.strictEqual(model.setIcon(state, 11, 'star'), state);
     state = model.reconcile(state, workspaces, []);
-    assert.equal(model.iconFor(state, 11), 'empty_dashboard');
+    assert.equal(model.iconFor(state, 11), 'add');
     assert.deepEqual(plain(model.reconcile(state, [], [])), {});
 });
 

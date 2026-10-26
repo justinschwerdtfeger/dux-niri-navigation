@@ -4,6 +4,7 @@ import QtQuick.Controls
 import qs.Common
 import qs.DCommon.Widgets
 import "ModelUtils.js" as ModelUtils
+import "WorkspaceModel.js" as WorkspaceModel
 
 Item {
     id: rail
@@ -68,8 +69,7 @@ Item {
                 hitWidth: row.width
                 hitHeight: row.height
                 enabled: rail.available
-                iconName: rail.assignments[String(workspaceId)]?.custom || rail.assignments[String(workspaceId)]
-                          ?.automatic || "empty_dashboard"
+                iconName: WorkspaceModel.iconFor(rail.assignments, workspaceId)
                 label: "Workspace " + workspaceIndex
                 selected: active
                 iconSize: rail.iconSize

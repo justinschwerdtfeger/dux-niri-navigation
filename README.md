@@ -12,7 +12,7 @@ Targets **Dux Shell 2.0**, including the fork’s configurable widget inset, wit
 make link-plugin
 ```
 
-In DMS Settings → Plugins, scan and enable the plugins you want, then add their widgets to any bar. Each instance follows its hosting monitor and bar orientation. The link helper installs both entries, respects `XDG_CONFIG_HOME`, accepts matching links, and refuses to replace other content. Keep the whole checkout in place: the workspace entry shares the root components through a relative symlink.
+`make link-plugin` builds two self-contained packages and links both entries. In DMS Settings → Plugins, scan and enable the plugins you want, then add their widgets to any bar. Each instance follows its hosting monitor and bar orientation. Use `make link-plugin PLUGIN=window-tabs` or `make link-plugin PLUGIN=workspaces` to install just one. The helper respects `XDG_CONFIG_HOME`, accepts matching links, and refuses to replace other content. Keep the generated package directory in place while linked; source edits require rebuilding. Existing checkout links need the [one-time package migration](docs/LOADING.md#upgrade-from-checkout-links).
 
 **Upgrading from Justin Navigation:** horizontal tabs retain their existing widget ID and settings (`justinNavigation`). Replace the old widget on workspace bars with **Justin Workspaces** (`justinWorkspaces`). Pinned icons fall back to the old plugin's favorites until you change them in the new picker. See [Loading](docs/LOADING.md) for migration and setup.
 
@@ -45,7 +45,7 @@ Shows the monitor’s workspaces, including its trailing empty workspace, in a h
 
 The bar’s inset changes the visible buttons, while their click targets span the full bar thickness. This keeps top/bottom edges clickable on horizontal bars and left/right edges clickable on vertical bars.
 
-Empty workspaces start with `empty_dashboard`; the first observed window seeds a simple app category. Assignments stay stable when that window closes. The picker’s current layout is intentionally retained.
+New workspaces start with a plus (`add`); the first observed window seeds a simple app category. Assignments stay stable when that window closes. The picker’s current layout is intentionally retained.
 
 ## Optional favicons
 
@@ -79,17 +79,24 @@ Development checks require Node.js 22.13+ (or 24+), Python 3.11+, Ruff, ShellChe
 
 Reload with `dms ipc call plugins reload justinNavigation` or `dms ipc call plugins reload justinWorkspaces`. DMS can cache helper components across reloads; a shell restart may be needed to load helper changes. Runtime validation and its limits are documented in [Development](docs/DEVELOPMENT.md).
 
-## Code map
+## Packaging and source layout
 
-| Area                             | Files                                                                                                       |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| DMS entry points and settings    | `NavigationWidget.qml`, `NavigationSettings.qml`, `WorkspaceWidget.qml`, `workspace-plugin/`, `plugin.json` |
-| Compositor and host boundaries   | `NiriState.qml`, `NavigationHost.qml`, `BarGeometry.qml`                                                    |
-| Window navigation                | `WindowStrip.qml`, `NavigationButton.qml`, `WindowModel.js`, `ReorderModel.js`                              |
-| Standalone window sidebar        | `SidebarDaemon.qml`, `SidebarPanel.qml`, `SidebarView.qml`, `SidebarModel.js`                               |
-| Workspace navigation             | `WorkspaceRail.qml`, `WorkspaceButton.qml`, `WorkspaceIconMenu.qml`, `WorkspaceModel.js`                    |
-| Shared model updates             | `ModelUtils.js`                                                                                             |
-| Session state and favicon bridge | `state/`, `BrowserModel.js`, `scripts/tabctl-favicons.py`                                                   |
-| Tooling and regression tests     | `.devcontainer/`, `scripts/`, `tests/`, `Makefile`                                                          |
+```bash
+make package                       # Both plugins
+make package PLUGIN=window-tabs    # Window Tabs only
+make package PLUGIN=workspaces     # Workspaces only
+```
+
+The output is `dist/justinNavigation/` and `dist/justinWorkspaces/`, with a versioned `.tar.gz` archive beside each directory. Each archive contains a complete plugin directory; extract either into Dux's plugin directory, scan, and enable it. Neither package requires this checkout or the other plugin. Plugin IDs, settings, and independent manifest versions are preserved. Building requires Python 3.11+; release packages require no build tools.
+
+| Area                                                  | Source                                                                        |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Window Tabs widget, settings, sidebar, and manifest   | `plugins/window-tabs/`                                                        |
+| Workspaces widget, settings, picker, and manifest     | `plugins/workspaces/`                                                         |
+| Compositor adapter and host geometry                  | `shared/NiriState.qml`, `shared/NavigationHost.qml`, `shared/BarGeometry.qml` |
+| Pure models, session state, and favicon subscriber    | `shared/*.js`, `shared/state/`, `shared/scripts/`                             |
+| Package builder, development tooling, and regressions | `scripts/`, `tests/`, `.devcontainer/`, `Makefile`                            |
+
+Shared runtime files are copied into each package at build time. QML uses package-local imports, keeping singleton identity within each installed plugin. Source directories are build inputs; load the generated packages for development and runtime.
 
 [Design](docs/DESIGN.md) describes current contracts. [Development](docs/DEVELOPMENT.md) describes APIs and validation. [Review](docs/REVIEW.md) records this refactor. [Agent guidance](AGENTS.md) sets maintenance boundaries and links the project [Dux plugin skill](skills/dms-plugin-dev/SKILL.md). Git history retains earlier implementation notes.

@@ -3,8 +3,8 @@ import QtQuick
 import QtTest
 import qs.Common
 import qs.Services
-import "../.." as Windows
-import "../../workspace-plugin" as Workspaces
+import "../../dist/justinNavigation" as Windows
+import "../../dist/justinWorkspaces" as Workspaces
 
 Item {
     id: suite
@@ -43,7 +43,7 @@ Item {
                })
     }
 
-    Workspaces.Widget {
+    Workspaces.WorkspaceWidget {
         id: workspaces
         y: 550
         pluginId: "justinWorkspaces"
@@ -72,7 +72,7 @@ Item {
                 width: 120
                 height: 36
             }
-            Windows.WorkspaceButton {
+            Workspaces.WorkspaceButton {
                 id: plainWorkspace
                 x: 140
                 width: 36

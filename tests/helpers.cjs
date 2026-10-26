@@ -4,7 +4,10 @@ const vm = require('node:vm');
 
 // Execute the same library files QML imports, including relative .imports.
 function loadModel(name) {
-    const filename = path.resolve(__dirname, '..', name);
+    const root = path.resolve(__dirname, '..');
+    const filename = name.includes('/')
+        ? path.resolve(root, name)
+        : path.resolve(root, name === 'SidebarModel.js' ? 'plugins/window-tabs' : 'shared', name);
     const context = vm.createContext({});
     const source = fs
         .readFileSync(filename, 'utf8')

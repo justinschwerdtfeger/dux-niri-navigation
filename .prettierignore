@@ -1,5 +1,5 @@
 .local/
-workspace-plugin/shared/
+dist/
 tmp/
 .agents/
 .codex/

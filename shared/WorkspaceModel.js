@@ -164,7 +164,7 @@ function reconcile(previous, workspaces, windows) {
 }
 function iconFor(assignments, id) {
     const entry = assignments[String(id)];
-    return entry?.custom || entry?.automatic || 'empty_dashboard';
+    return entry?.custom || entry?.automatic || 'add';
 }
 function setIcon(assignments, id, icon) {
     if (

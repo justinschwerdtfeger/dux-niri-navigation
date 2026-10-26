@@ -12,18 +12,11 @@ const qmlLibraries = {
 
 export default [
     {
-        ignores: [
-            '.local/**',
-            'tmp/**',
-            '.agents/**',
-            '.codex/**',
-            '.aws/**',
-            'workspace-plugin/shared/**',
-        ],
+        ignores: ['.local/**', 'tmp/**', '.agents/**', '.codex/**', '.aws/**', 'dist/**'],
     },
     js.configs.recommended,
     {
-        files: ['*.js'],
+        files: ['**/*.js'],
         plugins: { qml: qmlLibraries },
         processor: 'qml/library',
         languageOptions: {

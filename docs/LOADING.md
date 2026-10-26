@@ -8,16 +8,24 @@ Run from the repository:
 make link-plugin
 ```
 
-The helper creates two links under `$XDG_CONFIG_HOME/dms/plugins`, defaulting to `~/.config`:
+`make link-plugin` builds both packages, then creates two links under `$XDG_CONFIG_HOME/dms/plugins`, defaulting to `~/.config`:
 
-| Directory          | Target              | Plugin ID                               |
-| ------------------ | ------------------- | --------------------------------------- |
-| `JustinNavigation` | Repository root     | `justinNavigation` (Justin Window Tabs) |
-| `JustinWorkspaces` | `workspace-plugin/` | `justinWorkspaces` (Justin Workspaces)  |
+| Directory          | Target                   | Plugin ID                               |
+| ------------------ | ------------------------ | --------------------------------------- |
+| `JustinNavigation` | `dist/justinNavigation/` | `justinNavigation` (Justin Window Tabs) |
+| `JustinWorkspaces` | `dist/justinWorkspaces/` | `justinWorkspaces` (Justin Workspaces)  |
 
-Keep the entire checkout in place while linked, including `workspace-plugin/shared -> ..`. Repeated calls accept matching links. Both destinations are checked before either is created; conflicting content is never replaced. Runtime needs DMS/Niri and the supported Quickshell; lint tools are only for development.
+Use `make link-plugin PLUGIN=window-tabs` or `make link-plugin PLUGIN=workspaces` to build and link only one. Keep the selected generated directory in place while linked. Rebuild after source changes before reloading DMS. Repeated calls accept matching links; every selected destination is checked before any link is created, and conflicting content is never replaced. Preflight also reads existing manifests under other folder names and refuses a duplicate selected plugin ID, including an extracted release archive. Only the intended matching development link is accepted; remove an old installation explicitly after inspecting it before switching installation methods.
+
+For installation without a checkout, run `make package` on a development machine and extract either versioned archive from `dist/` into the plugin directory. Each archive contains one complete plugin directory, including shared runtime files, with no symlinks or dependency on the other plugin. Install only one copy of each plugin ID; do not extract a second copy alongside an existing development link. Runtime needs DMS/Niri and supported Quickshell; packaging and lint tools are not runtime dependencies.
 
 In DMS Settings → Plugins, scan and enable **Justin Window Tabs**, **Justin Workspaces**, or both. Add the desired widget to a bar's widget list. Both support horizontal and vertical bars. Enabling a plugin and placing a widget are separate steps. Start in a section with some free space.
+
+## Upgrade from checkout links
+
+Older installations link Window Tabs to the repository root and Workspaces to `workspace-plugin/`. Those locations are no longer loadable packages. Before changing checkout layout on the desktop, build the new packages, verify the old installation entries are symlinks to this checkout, and remove only those installation links. Run `make link-plugin` (or select just one plugin), scan, and reload the affected plugins. Keep the checkout and settings intact. The helper deliberately refuses to replace old links automatically; a broken legacy workspace link also needs explicit removal after inspecting its stored target.
+
+Plugin IDs and saved settings remain the same. Do not delete a real plugin directory or an installation belonging to another checkout. Agents need desktop-configuration authorization before performing this migration; repository development does not migrate the live desktop.
 
 ## Upgrade from the combined plugin
 
@@ -54,7 +62,7 @@ Buttons and the horizontal pill fill the DMS bar height. Adjust **Size** for hei
 
 ## Workspaces
 
-Add **Justin Workspaces** to any bar. A horizontal bar shows a row; a vertical bar shows a rail. Left-click changes workspace; right-click opens the icon picker. Right-click picker icons to pin/unpin. Assigning an icon never names or retains a dynamic workspace. The picker controls are unchanged, and its position follows all four bar edges.
+Add **Justin Workspaces** to any bar. A horizontal bar shows a row; a vertical bar shows a rail. New workspaces show a plus until a first window seeds a category or you choose a custom icon. Left-click changes workspace; right-click opens the icon picker. Right-click picker icons to pin/unpin. Assigning an icon never names or retains a dynamic workspace. The picker controls are unchanged, and its position follows all four bar edges.
 
 ## Favicons
 
@@ -87,4 +95,4 @@ This briefly interrupts DMS panels/popouts while application windows remain runn
 - **Old behavior after reload:** inspect helper-cache loading and service logs before treating it as a new code failure.
 - **Load errors:** collect the exact QML error and the installed/running DMS versions.
 
-To uninstall either plugin, disable/remove its widgets in DMS, verify its link points to this checkout, and remove only that link. Removing the Window Tabs install link does not remove the shared repository files needed by Workspaces. Respect a custom `XDG_CONFIG_HOME` when checking paths.
+To uninstall either plugin, disable/remove its widgets in DMS, verify its link points to this checkout, and remove only that link. Removing either plugin or its generated directory leaves the other package complete. Respect a custom `XDG_CONFIG_HOME` when checking paths.

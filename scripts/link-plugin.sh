@@ -3,8 +3,21 @@ set -euo pipefail
 
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 plugin_parent="${XDG_CONFIG_HOME:-$HOME/.config}/dms/plugins"
-sources=("$repo_dir" "$repo_dir/workspace-plugin")
-names=(JustinNavigation JustinWorkspaces)
+case "${1:-all}" in
+    all) ids=(justinNavigation justinWorkspaces); names=(JustinNavigation JustinWorkspaces) ;;
+    window-tabs) ids=(justinNavigation); names=(JustinNavigation) ;;
+    workspaces) ids=(justinWorkspaces); names=(JustinWorkspaces) ;;
+    *) printf 'Usage: %s [all|window-tabs|workspaces]\n' "$0" >&2; exit 2 ;;
+esac
+sources=()
+for id in "${ids[@]}"; do
+    source="$repo_dir/dist/$id"
+    if [[ ! -f "$source/plugin.json" ]]; then
+        printf 'Missing package: %s; run make package first.\n' "$source" >&2
+        exit 1
+    fi
+    sources+=("$source")
+done
 
 # Validate every destination before creating either link.
 for index in "${!names[@]}"; do
@@ -18,6 +31,9 @@ for index in "${!names[@]}"; do
     fi
 done
 
+# Dux discovers manifests by ID, including archives extracted under another name.
+python3 "$repo_dir/scripts/check_installation.py" "$plugin_parent" "${ids[@]}"
+
 mkdir -p -- "$plugin_parent"
 for index in "${!names[@]}"; do
     destination="$plugin_parent/${names[$index]}"
@@ -26,4 +42,4 @@ for index in "${!names[@]}"; do
     fi
     printf 'Plugin linked: %s\n' "$destination"
 done
-printf 'Next: DMS Settings → Plugins → Scan, then enable Justin Window Tabs and Justin Workspaces.\n'
+printf 'Next: DMS Settings → Plugins → Scan, then enable the linked plugins you want.\n'

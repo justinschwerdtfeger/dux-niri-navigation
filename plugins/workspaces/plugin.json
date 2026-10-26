@@ -6,7 +6,7 @@
   "author": "Justin",
   "type": "widget",
   "capabilities": ["dankbar-widget"],
-  "component": "./Widget.qml",
+  "component": "./WorkspaceWidget.qml",
   "settings": "./Settings.qml",
   "icon": "view_week",
   "permissions": ["settings_read", "settings_write"]

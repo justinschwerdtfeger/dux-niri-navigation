@@ -5,9 +5,17 @@ import prettier from 'prettier';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const write = process.argv.includes('--write');
-const config = await prettier.resolveConfig(path.join(root, 'WindowModel.js'));
-for (const name of (await fs.readdir(root)).filter((name) => name.endsWith('.js'))) {
-    const file = path.join(root, name);
+const config = await prettier.resolveConfig(path.join(root, 'shared/WindowModel.js'));
+const entries = (
+    await Promise.all(
+        ['shared', 'plugins'].map((dir) =>
+            fs.readdir(path.join(root, dir), { recursive: true, withFileTypes: true }),
+        ),
+    )
+).flat();
+for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
+    const file = path.join(entry.parentPath, entry.name);
     const source = await fs.readFile(file, 'utf8');
     const directives = source.match(/^(?:\.(?:pragma|import)[^\n]*\n)+/)?.[0] ?? '';
     const formatted =
@@ -19,7 +27,7 @@ for (const name of (await fs.readdir(root)).filter((name) => name.endsWith('.js'
     if (formatted === source) continue;
     if (write) await fs.writeFile(file, formatted);
     else {
-        console.error(`${name}: run make format`);
+        console.error(`${path.relative(root, file)}: run make format`);
         process.exitCode = 1;
     }
 }

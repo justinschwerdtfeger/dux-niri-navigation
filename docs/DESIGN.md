@@ -10,7 +10,11 @@ Window Tabs (`justinNavigation`, retained for settings compatibility) and Worksp
 
 `NiriState.qml` is the only consumer of DMS’s internal compositor services. It guards actions against live membership and adapts reactive snapshots to pure models. `BarGeometry.qml` isolates the DMS section-layout assumptions. `NavigationHost.qml` shares button-local hover bindings and axis-aware space budgets; `NavigationWidget.qml` owns tabs/launcher and `WorkspaceWidget.qml` owns the rail/picker. Keep those DMS dependencies out of the pure models and navigation views.
 
-The root manifest is a Window Tabs composite with ordinary widget and optional sidebar daemon surfaces; `workspace-plugin/` contains the workspace manifest and thin QML wrappers. Its `shared -> ..` symlink makes imports work through DMS's installed plugin link without copying components. Install the entire checkout; the workspace folder is not a standalone package. QML resolves singleton identity by module URL: only workspace instances access `WorkspaceIcons`, and only window instances access `BrowserFavicons`. Sidebar instances use the root window module URL and share its favicon subscriber. This prevents duplicate workspace stores or favicon subscribers across entry paths.
+`plugins/window-tabs/` contains the Window Tabs composite manifest, widget, settings, and optional sidebar daemon surfaces. `plugins/workspaces/` contains its own manifest, widget, settings, rail, and picker. `shared/` contains the common compositor adapter, host geometry, pure models, session state, and favicon subscriber. The shared compositor adapter uses models from both features; these are internal infrastructure rather than a runtime dependency on either plugin.
+
+`scripts/package_plugins.py` combines shared runtime files with one plugin's sources into a flat, self-contained package under `dist/<pluginId>/`, plus a versioned archive. Relative imports remain package-local. There are no source-tree symlinks or sibling-plugin imports. Each plugin retains its own ID, settings, and manifest version; either can be built, installed, enabled, and removed independently. Source directories are build inputs, not directly loadable plugin packages.
+
+QML resolves singleton identity by module URL: only workspace instances access their package's `WorkspaceIcons`, and only window instances access their package's `BrowserFavicons`. Sidebar instances use the same window package URL and share its favicon subscriber. This prevents duplicate workspace stores or favicon subscribers across entry paths.
 
 `ModelUtils.syncRows` reconciles a QML ListModel by ID. It removes obsolete rows, inserts/moves rows, and writes only changed roles. Both views share it. Unchanged snapshots preserve delegates and avoid unnecessary notifications. Workspace assignments similarly retain object identity until their contents change.
 
@@ -52,7 +56,7 @@ Cancel on missing IDs, unexpected order/layout, unavailable compositor, changed 
 
 ## Workspace rail and picker
 
-Show the output’s workspaces in index order, including the trailing empty workspace. Empty active workspaces follow normal Niri lifetime; do not delete or name them to attach an icon.
+Show the output’s workspaces in index order, including the trailing empty workspace. A workspace without a seeded category or custom choice shows a plus (`add`); the first observed window or a custom selection replaces it. Closing the seed window retains the assigned icon. Empty active workspaces follow normal Niri lifetime; do not delete or name them to attach an icon.
 
 `state/WorkspaceIcons.qml` shares session-local assignments across instances. Reconcile against all outputs so one monitor cannot discard another’s assignments. The first observed window seeds a category; the lowest window ID approximates the earliest window when joining an existing session. Floating windows can seed icons. Keep the seed after closure, and remove assignments only when IDs leave state. Compositor unavailability clears them. Reused IDs without an unavailable snapshot remain a compatibility limit.
 

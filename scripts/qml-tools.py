@@ -30,14 +30,13 @@ def tool(name):
 
 
 def run(action):
-    files = sorted(
-        [
-            *ROOT.glob("*.qml"),
-            *(ROOT / "state").glob("*.qml"),
-            *(ROOT / "workspace-plugin").glob("*.qml"),
-        ]
-    )
+    files = sorted([*(ROOT / "plugins").rglob("*.qml"), *(ROOT / "shared").rglob("*.qml")])
     if action == "lint":
+        files = sorted((ROOT / "dist").glob("*/*.qml")) + sorted(
+            (ROOT / "dist").glob("*/state/*.qml")
+        )
+        if not files:
+            raise ValueError("Plugin packages are missing; run make package first")
         imports = ROOT / ".local/dms-tooling/imports"
         if not (imports / "qs/Modules/Plugins/qmldir").is_file():
             raise ValueError(
