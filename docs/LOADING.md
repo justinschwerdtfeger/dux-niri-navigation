@@ -10,16 +10,24 @@ make link-plugin
 
 `make link-plugin` builds both packages, then creates two links under `$XDG_CONFIG_HOME/dms/plugins`, defaulting to `~/.config`:
 
-| Directory          | Target                   | Plugin ID                               |
-| ------------------ | ------------------------ | --------------------------------------- |
-| `JustinNavigation` | `dist/justinNavigation/` | `justinNavigation` (Justin Window Tabs) |
-| `JustinWorkspaces` | `dist/justinWorkspaces/` | `justinWorkspaces` (Justin Workspaces)  |
+| Directory          | Target                   | Plugin ID                        |
+| ------------------ | ------------------------ | -------------------------------- |
+| `JustinNavigation` | `dist/justinNavigation/` | `justinNavigation` (Window Tabs) |
+| `JustinWorkspaces` | `dist/justinWorkspaces/` | `justinWorkspaces` (Workspaces)  |
 
 Use `make link-plugin PLUGIN=window-tabs` or `make link-plugin PLUGIN=workspaces` to build and link only one. Keep the selected generated directory in place while linked. Rebuild after source changes before reloading DMS. Repeated calls accept matching links; every selected destination is checked before any link is created, and conflicting content is never replaced. Preflight also reads existing manifests under other folder names and refuses a duplicate selected plugin ID, including an extracted release archive. Only the intended matching development link is accepted; remove an old installation explicitly after inspecting it before switching installation methods.
 
 For installation without a checkout, run `make package` on a development machine and extract either versioned archive from `dist/` into the plugin directory. Each archive contains one complete plugin directory, including shared runtime files, with no symlinks or dependency on the other plugin. Install only one copy of each plugin ID; do not extract a second copy alongside an existing development link. Runtime needs DMS/Niri and supported Quickshell; packaging and lint tools are not runtime dependencies.
 
-In DMS Settings → Plugins, scan and enable **Justin Window Tabs**, **Justin Workspaces**, or both. Add the desired widget to a bar's widget list. Both support horizontal and vertical bars. Enabling a plugin and placing a widget are separate steps. Start in a section with some free space.
+In DMS Settings → Plugins, scan and enable **Window Tabs**, **Workspaces**, or both. Add the desired widget to a bar's widget list. Both support horizontal and vertical bars. Enabling a plugin and placing a widget are separate steps. Start in a section with some free space.
+
+## Upgrade from the project rename
+
+Dux Niri Navigation was previously named Justin Navigation / justin-shell. The GitHub repository is now `justinschwerdtfeger/dux-niri-navigation`; existing local checkout directories can keep their names. Update an SSH remote with `git remote set-url origin git@github.com:justinschwerdtfeger/dux-niri-navigation.git`, or use `https://github.com/justinschwerdtfeger/dux-niri-navigation.git` for HTTPS.
+
+The plugin display names are now **Window Tabs** and **Workspaces**. Their IDs, generated package paths, development installation links, and saved settings remain unchanged. Rebuild the packages and rescan plugins to load the new names; keep existing widgets and settings. No desktop configuration migration is required for this rename.
+
+The devcontainer now mounts the checkout at `/workspaces/dux-niri-navigation`. Recreate a disposable container created with the old mount path before using the new configuration; save any container-local work first.
 
 ## Upgrade from checkout links
 
@@ -29,9 +37,9 @@ Plugin IDs and saved settings remain the same. Do not delete a real plugin direc
 
 ## Upgrade from the combined plugin
 
-1. Run `make link-plugin`, scan, and enable **Justin Workspaces**.
+1. Run `make link-plugin`, scan, and enable **Workspaces**.
 2. Keep existing horizontal tab widgets: their ID and saved window settings are unchanged.
-3. On bars where the old **Justin Navigation** widget showed workspaces, replace it with **Justin Workspaces** in the same section/position. Leaving the old widget there now shows vertical window tabs.
+3. On bars where the old **Justin Navigation** widget showed workspaces, replace it with **Workspaces** in the same section/position. Leaving the old widget there now shows vertical window tabs.
 4. Existing pinned symbols remain available through a legacy-settings fallback. The first pin/unpin in the new picker saves that list under `justinWorkspaces`; workspace assignments remain session-local.
 5. Restart the existing DMS shell if helper caching prevents the split from loading correctly.
 
@@ -39,7 +47,7 @@ The install helper does not edit bar configurations or enable plugins automatica
 
 ## Standalone sidebar
 
-Enable **Justin Window Tabs**, then open its plugin settings. No bar widget placement is required for the sidebar: DMS loads its daemon alongside the optional bar widget surface.
+Enable **Window Tabs**, then open its plugin settings. No bar widget placement is required for the sidebar: DMS loads its daemon alongside the optional bar widget surface.
 
 1. Set **Standalone sidebar** to **Always visible titles** or **Expandable icon rail**. The default is **Off**.
 2. Choose **Sidebar side**, **Sidebar monitor**, and **Sidebar title width**. Use the plugin width slider rather than the regular bar Size slider.
@@ -62,7 +70,7 @@ Buttons use Dux's widget thickness and inset on either axis. Adjust the hosting 
 
 ## Workspaces
 
-Add **Justin Workspaces** to any bar. A horizontal bar shows a row; a vertical bar shows a rail. New workspaces show a plus until a first window seeds a category or you choose a custom icon. Left-click changes workspace; right-click opens the icon picker. Right-click picker icons to pin/unpin. Assigning an icon never names or retains a dynamic workspace. The picker controls are unchanged, and its position follows all four bar edges.
+Add **Workspaces** to any bar. A horizontal bar shows a row; a vertical bar shows a rail. New workspaces show a plus until a first window seeds a category or you choose a custom icon. Left-click changes workspace; right-click opens the icon picker. Right-click picker icons to pin/unpin. Assigning an icon never names or retains a dynamic workspace. The picker controls are unchanged, and its position follows all four bar edges.
 
 ## Favicons
 

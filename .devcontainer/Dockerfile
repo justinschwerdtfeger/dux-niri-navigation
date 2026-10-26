@@ -24,5 +24,5 @@ RUN python3 -m venv /opt/dev-tools \
 
 ENV PATH="/opt/dev-tools/bin:/usr/lib64/qt6/bin:${PATH}"
 USER developer
-WORKDIR /workspaces/justin-shell
+WORKDIR /workspaces/dux-niri-navigation
 CMD ["sleep", "infinity"]

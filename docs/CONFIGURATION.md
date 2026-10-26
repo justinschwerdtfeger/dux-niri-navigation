@@ -1,5 +1,15 @@
 # Desktop compatibility audit — 2026-09-30
 
+## GitHub repository rename — 2026-10-26
+
+At the user's explicit request, renamed `justinschwerdtfeger/justin-shell` to
+[`justinschwerdtfeger/dux-niri-navigation`](https://github.com/justinschwerdtfeger/dux-niri-navigation)
+and updated the local repository's shared `origin` remote to
+`git@github.com:justinschwerdtfeger/dux-niri-navigation.git`. Existing checkout and
+worktree paths retain their names. Plugin IDs, installation links, settings, and
+layer namespaces remain compatible; no desktop configuration was changed for
+the rename.
+
 ## Temporary sidebar validation — 2026-10-10
 
 With explicit user authorization, temporarily changed only Window Tabs’ sidebar

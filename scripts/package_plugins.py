@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGINS = {"window-tabs": "justinNavigation", "workspaces": "justinWorkspaces"}
+# Keep the ownership marker so pre-rename generated packages can still be rebuilt.
 MARKER = ".justin-shell-package"
 
 

@@ -1,8 +1,10 @@
-# Justin Navigation plugins
+# Dux Niri Navigation
 
-Two Dux Shell (DMS) plugins for Niri: **Justin Window Tabs** and **Justin Workspaces**. Each works on horizontal or vertical bars, independently of the other. DMS owns the bars, theme, launcher, and settings; Niri owns layout, focus, and dynamic workspace lifetime.
+Two Dux Shell (DMS) plugins for Niri: **Window Tabs** and **Workspaces**. Each works on horizontal or vertical bars, independently of the other. DMS owns the bars, theme, launcher, and settings; Niri owns layout, focus, and dynamic workspace lifetime.
 
 Window Tabs also provides an optional standalone sidebar with readable horizontal titles, independent of DankBar's width limit.
+
+The repository is [`dux-niri-navigation`](https://github.com/justinschwerdtfeger/dux-niri-navigation). The plugins appear as **Window Tabs** and **Workspaces**. Legacy plugin IDs (`justinNavigation`, `justinWorkspaces`), installation link names, package markers, and layer namespaces remain stable so existing settings, bar placements, builds, and compositor rules continue to work. Author credits and historical configuration records retain their original names.
 
 ## Use
 
@@ -14,7 +16,7 @@ make link-plugin
 
 `make link-plugin` builds two self-contained packages and links both entries. In DMS Settings → Plugins, scan and enable the plugins you want, then add their widgets to any bar. Each instance follows its hosting monitor and bar orientation. Use `make link-plugin PLUGIN=window-tabs` or `make link-plugin PLUGIN=workspaces` to install just one. The helper respects `XDG_CONFIG_HOME`, accepts matching links, and refuses to replace other content. Keep the generated package directory in place while linked; source edits require rebuilding. Existing checkout links need the [one-time package migration](docs/LOADING.md#upgrade-from-checkout-links).
 
-**Upgrading from Justin Navigation:** horizontal tabs retain their existing widget ID and settings (`justinNavigation`). Replace the old widget on workspace bars with **Justin Workspaces** (`justinWorkspaces`). Pinned icons fall back to the old plugin's favorites until you change them in the new picker. See [Loading](docs/LOADING.md) for migration and setup.
+**Upgrading from Justin Navigation:** horizontal tabs retain their existing widget ID and settings (`justinNavigation`). Replace the old widget on workspace bars with **Workspaces** (`justinWorkspaces`). Pinned icons fall back to the old plugin's favorites until you change them in the new picker. See [Loading](docs/LOADING.md) for migration and setup.
 
 ## Window strip
 
@@ -30,7 +32,7 @@ Buttons follow Dux’s widget thickness on either axis, matching native widgets.
 
 ## Standalone window sidebar
 
-In **DMS Settings → Plugins → Justin Window Tabs**, set **Standalone sidebar** to:
+In **DMS Settings → Plugins → Window Tabs**, set **Standalone sidebar** to:
 
 - **Always visible titles:** a wide vertical list that reserves its full width for windows.
 - **Expandable icon rail:** a 48-pixel rail that expands into horizontal title rows. Choose **Click** or **Hover** with **Expand sidebar on**. The expand/collapse button works in either mode; Escape collapses it. Hover opens after 200 ms and closes 400 ms after leaving, with both timers held during presses, dragging, and reorder acknowledgment.

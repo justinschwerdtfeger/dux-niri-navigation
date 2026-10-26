@@ -1,6 +1,6 @@
 ---
 name: dms-plugin-dev
-description: Create, modify, or debug Justin Shell's Dux Shell bar widgets, settings, and optional sidebar daemon. Covers Dux 2.0 host sizing and shared widgets; use the repository development workflow for verification.
+description: Create, modify, or debug Dux Niri Navigation's Dux Shell bar widgets, settings, and optional sidebar daemon. Covers Dux 2.0 host sizing and shared widgets; use the repository development workflow for verification.
 ---
 
 # Dux Shell plugin development

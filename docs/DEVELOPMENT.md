@@ -38,7 +38,7 @@ The packager rejects source/output overlap and foreign output directories, and r
 
 ## Devcontainer
 
-The container runs as `developer` with the checkout at `/workspaces/justin-shell`. It supplies Node/npm, Python/Gio, pinned Ruff, ShellCheck, Qt tools, Qt Quick Test, and Quickshell. Its creation hook runs `npm ci` and generates persistent Dux imports. It has no desktop display socket, session bus, or user configuration mounts.
+The container runs as `developer` with the checkout at `/workspaces/dux-niri-navigation`. It supplies Node/npm, Python/Gio, pinned Ruff, ShellCheck, Qt tools, Qt Quick Test, and Quickshell. Its creation hook runs `npm ci` and generates persistent Dux imports. It has no desktop display socket, session bus, or user configuration mounts.
 
 ```bash
 make dev-up
@@ -101,6 +101,8 @@ Open `http://127.0.0.1:8766/late-favicon.html` in Helium. Its title/URL stay fix
 ## Runtime acceptance
 
 Run in the existing Dux/Niri session after loading the changed packages. Repository checks never start/restart the desktop shell or migrate configuration. Helper QML can survive plugin reloads; restart the existing shell only with session authorization.
+
+For the Dux Niri Navigation rename, visible confirmation of the **Window Tabs** and **Workspaces** names after rebuilding and rescanning remains pending. Legacy IDs, installation links, package ownership markers, and layer namespaces are preserved; the rename requires no desktop settings migration.
 
 1. Record installed and active revisions. Inspect logs for imports, missing properties, binding loops and exceptions; reload success alone does not prove new helpers loaded.
 2. Exercise both plugins at all four bar edges with default/positive/zero inset, fractional output scales, native styles, outlines, padding overrides, icon/font scales and maximize options. Confirm fitting-tab containment, full-cross-axis workspace clicks/right-clicks, gaps/outside boundaries, native tooltips and picker placement. The earlier runtime report of missed workspace edge clicks remains unverified after the component correction.

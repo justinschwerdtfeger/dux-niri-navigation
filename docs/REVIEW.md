@@ -6,6 +6,14 @@ The development target is Dux 2.0 fork `0bd677b213a445d4012e37968f8beca0acd90012
 
 ## Findings and resolutions
 
+### Project naming
+
+The project is now **Dux Niri Navigation** (`dux-niri-navigation`), with **Window Tabs** and **Workspaces** as the plugin display names. Repository links, npm metadata, development-container paths, diagnostics, temporary-directory prefixes, the manual favicon page, and project guidance use the new name. The plugin IDs, installation links, package ownership marker, and layer namespaces remain stable to preserve saved settings, bar placement, rebuilds, and compositor rules. Author credits, historical configuration paths, and migration references retain the original names.
+
+The renamed devcontainer builds and completes setup at `/workspaces/dux-niri-navigation`. `make dev-check` passes `make check test-qml`: 59 JavaScript tests, 34 Python tests, 107 Qt component passes, 6 standalone-package smoke passes, and all configured lint/format checks. Visible confirmation of the new plugin names after a desktop rescan remains pending. The rename does not change host APIs or navigation behavior; the existing inspected baseline and runtime acceptance limits still apply.
+
+### Behavior and tooling
+
 - **P1 — vertical pointer dragging never started.** `NavigationButton` checked only scene-X displacement, so straight vertical motion could not reorder icons, title rows, rotated tabs or sidebar windows. The threshold now accepts movement on either axis. Five pointer-level cases cover horizontal, vertical icons/titles and both rotated edges, including below-threshold motion, focus on press, drop dispatch and no second activation on release. The previous vertical tests bypassed this boundary by calling drag functions directly.
 - **P2 — Escape after mouse expansion lacked QML focus.** The sidebar expand button now takes focus on an explicit left press. Its existing Escape test no longer manually assigns focus. Hover expansion does not acquire focus. Native Wayland keyboard routing still needs acceptance.
 - **P2 — pointer entry during acknowledgment could open a held sidebar.** Hover scheduling now rejects all interaction holds, including entry after a hold has already begun. A new event-order regression reproduces the failure. Tab, launcher and overflow presses share one held-anchor state, so controls participate in the same hold.

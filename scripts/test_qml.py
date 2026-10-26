@@ -11,7 +11,7 @@ from package_plugins import PLUGINS, ROOT
 
 
 def run(runner):
-    with tempfile.TemporaryDirectory(prefix="justin-shell-qml-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="dux-niri-navigation-qml-") as temporary:
         stage = Path(temporary)
         shutil.copytree(ROOT / "tests/qml", stage / "tests/qml")
         for plugin_id in PLUGINS.values():
