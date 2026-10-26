@@ -24,7 +24,7 @@ QtObject {
             }
         }
         stderr: SplitParser {
-            onRead: data => console.warn("Justin Navigation favicons:", data)
+            onRead: data => console.warn("Dux Niri Navigation favicons:", data)
         }
         // Quickshell 0.3.1 metadata omits QProcess::ExitStatus. No arguments are used.
         // qmllint disable signal-handler-parameters

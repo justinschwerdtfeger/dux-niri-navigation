@@ -1,7 +1,7 @@
 {
   "id": "justinNavigation",
-  "name": "Justin Window Tabs",
-  "description": "Output-scoped Niri window tabs for DMS bars and configurable sidebars.",
+  "name": "Window Tabs",
+  "description": "Output-scoped Niri window tabs for Dux Shell bars and configurable sidebars.",
   "version": "0.7.0",
   "author": "Justin",
   "type": "composite",

@@ -237,7 +237,7 @@ def main():
     except ImportError:
         signal_add = GLib.unix_signal_add
 
-    with tempfile.TemporaryDirectory(prefix="justin-navigation-favicons-") as directory:
+    with tempfile.TemporaryDirectory(prefix="dux-niri-navigation-favicons-") as directory:
         Subscriber(Gio, GLib, directory)
         loop = GLib.MainLoop()
         signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, loop.quit)

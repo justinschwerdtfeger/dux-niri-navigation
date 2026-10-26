@@ -1,7 +1,7 @@
 {
   "id": "justinWorkspaces",
-  "name": "Justin Workspaces",
-  "description": "Output-scoped Niri workspace icons for horizontal or vertical DMS bars.",
+  "name": "Workspaces",
+  "description": "Output-scoped Niri workspace icons for horizontal or vertical Dux Shell bars.",
   "version": "0.6.0",
   "author": "Justin",
   "type": "widget",

@@ -1,12 +1,12 @@
 {
-  "name": "Justin Navigation (Dux 2.0.0)",
+  "name": "Dux Niri Navigation (Dux 2.0.0)",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
   },
   "remoteUser": "developer",
-  "workspaceFolder": "/workspaces/justin-shell",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/justin-shell,type=bind",
+  "workspaceFolder": "/workspaces/dux-niri-navigation",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/dux-niri-navigation,type=bind",
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "customizations": {
     "vscode": {
