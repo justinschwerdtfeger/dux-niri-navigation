@@ -31,13 +31,20 @@ format:
 SHELLCHECK ?= shellcheck
 QMLTESTRUNNER ?= qmltestrunner
 DEVCONTAINER ?= devcontainer
+DEVCONTAINER_UP_ARGS ?=
 CONTAINER_ENGINE ?= docker
 
 dev-up:
-	$(DEVCONTAINER) up --docker-path $(CONTAINER_ENGINE) --workspace-folder "$(CURDIR)"
+	@common_dir="$$(git rev-parse --path-format=absolute --git-common-dir)" || exit; \
+	case "$$common_dir" in \
+	    "$(CURDIR)"|"$(CURDIR)"/*) set -- ;; \
+	    *,*) echo 'Cannot mount a Git directory containing a comma.' >&2; exit 1 ;; \
+	    *) set -- --mount "type=bind,source=$$common_dir,target=$$common_dir" ;; \
+	esac; \
+	$(DEVCONTAINER) up --docker-path "$(CONTAINER_ENGINE)" --workspace-folder "$(CURDIR)" $(DEVCONTAINER_UP_ARGS) "$$@"
 
 dev-check:
-	$(DEVCONTAINER) exec --docker-path $(CONTAINER_ENGINE) --workspace-folder "$(CURDIR)" make check test-qml
+	$(DEVCONTAINER) exec --docker-path "$(CONTAINER_ENGINE)" --workspace-folder "$(CURDIR)" make check test-qml
 
 PLUGIN ?= all
 
