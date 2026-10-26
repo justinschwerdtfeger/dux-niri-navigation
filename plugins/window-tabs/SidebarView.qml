@@ -27,8 +27,8 @@ Rectangle {
     }
     property bool animationReady: false
     readonly property bool expandable: configuration.mode === "expandable"
-    readonly property bool interactionHeld: strip.dragWindowId !== null || strip.pressedTabAnchor !== null
-                                            || reorderBusy
+    readonly property bool navigationHeld: strip.dragWindowId !== null || strip.pressedAnchor !== null || reorderBusy
+    readonly property bool interactionHeld: navigationHeld || expandButton.down
     readonly property real padding: 6
     readonly property real rowHeight: 36
     property int hoverOpenDelay: 200
@@ -77,11 +77,11 @@ Rectangle {
     function updateHover(hovered) {
         openDelay.stop();
         closeDelay.stop();
-        if (!expandable || configuration.trigger !== "hover")
+        if (!expandable || configuration.trigger !== "hover" || interactionHeld)
             return;
         if (hovered && !expanded)
             openDelay.restart();
-        else if (!hovered && expanded && !interactionHeld)
+        else if (!hovered && expanded)
             closeDelay.restart();
     }
 
@@ -129,7 +129,9 @@ Rectangle {
               ? "Collapse titles" : (sidebar.configuration.side === "left" ? "›" : "‹")
         textOpacity: sidebar.animatedWidth > sidebar.configuration.compactWidth ? sidebar.titleOpacity : 1
         tooltip: sidebar.panelGeometry.showTitles ? "Collapse window titles" : "Expand window titles"
-        enabled: !sidebar.interactionHeld
+        enabled: !sidebar.navigationHeld
+        // Explicit interaction enables Escape; hover leaves app focus alone.
+        onPressStarted: forceActiveFocus(Qt.MouseFocusReason)
         onClicked: sidebar.toggleExpansion()
         onTooltipRequested: anchor => strip.showTooltip(anchor)
         onTooltipDismissed: anchor => strip.hideTooltip(anchor)

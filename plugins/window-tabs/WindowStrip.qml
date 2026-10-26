@@ -123,17 +123,17 @@ Item {
     readonly property real scrollOffset: vertical ? viewport.contentY : viewport.contentX
     property real dragGrabOffset: 0
     property var dragTarget: null
-    property var pressedTabAnchor: null
+    property var pressedAnchor: null
     property var droppedPreview: null
     readonly property var tabVisualPositions: WindowModel.tabVisualPositions(windows, tabLayout, dragWindowId
                                                                              ?? droppedPreview?.sourceId ?? null,
                                                                              dragTarget ?? droppedPreview?.target
                                                                              ?? null, gap)
 
-    function endTabPress(anchor) {
-        if (pressedTabAnchor !== anchor)
+    function endPress(anchor) {
+        if (pressedAnchor !== anchor)
             return;
-        pressedTabAnchor = null;
+        pressedAnchor = null;
         Qt.callLater(revealActive);
     }
 
@@ -141,7 +141,7 @@ Item {
         dragWindowId = null;
         dragAnchor = null;
         dragTarget = null;
-        pressedTabAnchor = null;
+        pressedAnchor = null;
     }
 
     function startTabDrag(anchor, windowId, sceneX, sceneY) {
@@ -334,8 +334,8 @@ Item {
             return;
         }
         const pos = anchor.mapToItem(null, anchor.width / 2, anchor.height);
-        const tooltipY = barEdge === "bottom" ? parentScreen.height - buttonHeight - barSpacing - gap
-                                                - activeTooltip.implicitHeight : buttonHeight + barSpacing + gap;
+        const inset = barThickness + barSpacing + gap;
+        const tooltipY = barEdge === "bottom" ? parentScreen.height - inset - activeTooltip.implicitHeight : inset;
         activeTooltip.show(anchor.tooltip, pos.x, tooltipY, parentScreen, false, false);
     }
 
@@ -365,11 +365,7 @@ Item {
         cancelTabDrag();
         droppedPreview = null;
         hideTooltip(null);
-        wheelState = {
-            axis: "",
-            source: "",
-            value: 0
-        };
+        resetWheelState();
     }
 
     function setScrollOffset(offset) {
@@ -384,11 +380,7 @@ Item {
         cancelTabDrag();
         droppedPreview = null;
         followActive = true;
-        wheelState = {
-            axis: "",
-            source: "",
-            value: 0
-        };
+        resetWheelState();
         viewport.contentX = 0;
         viewport.contentY = 0;
         Qt.callLater(revealActive);
@@ -405,7 +397,7 @@ Item {
     }
 
     function revealActive() {
-        if (viewport.moving || dragWindowId !== null || pressedTabAnchor !== null)
+        if (viewport.moving || dragWindowId !== null || pressedAnchor !== null)
             return;
         // A new rightmost tab can be temporarily clipped while the strip
         // grows. Revealing it now would scroll existing tabs and then undo
@@ -523,7 +515,7 @@ Item {
                         showAppIcon: true
                         acceptMiddleClick: true
                         activateOnPress: true
-                        opaqueBackground: strip.pressedTabAnchor === tabButton || strip.dragWindowId === tab.windowId
+                        opaqueBackground: strip.pressedAnchor === tabButton || strip.dragWindowId === tab.windowId
                                           || strip.droppedPreview?.sourceId === tab.windowId
                         dragEnabled: strip.available && !strip.reorderBusy
                         text: tab.title
@@ -534,9 +526,9 @@ Item {
                         onTooltipDismissed: anchor => strip.hideTooltip(anchor)
                         onClicked: strip.windowActivated(tab.windowId)
                         onPressStarted: anchor => {
-                            strip.pressedTabAnchor = anchor;
+                            strip.pressedAnchor = anchor;
                         }
-                        onPressEnded: anchor => strip.endTabPress(anchor)
+                        onPressEnded: anchor => strip.endPress(anchor)
                         onMiddleClicked: strip.windowCloseRequested(tab.windowId)
                         onTabDragStarted: (anchor, x, y) => strip.startTabDrag(anchor, tab.windowId, x, y)
                         onTabDragMoved: (anchor, x, y) => strip.moveTabDrag(anchor, x, y)
@@ -551,6 +543,17 @@ Item {
         }
     }
 
+    component StripControl: NavigationButton {
+        textSize: strip.tabTextSize
+        barStyle: strip.barStyle
+        width: strip.vertical ? strip.buttonHeight : strip.controlWidth
+        height: strip.vertical ? strip.controlWidth : strip.buttonHeight
+        onTooltipRequested: anchor => strip.showTooltip(anchor)
+        onTooltipDismissed: anchor => strip.hideTooltip(anchor)
+        onPressStarted: anchor => strip.pressedAnchor = anchor
+        onPressEnded: anchor => strip.endPress(anchor)
+    }
+
     Grid {
         id: controls
         // Empty horizontal columns retain spacing even with hidden arrows.
@@ -560,41 +563,23 @@ Item {
         y: strip.vertical ? strip.height - height : 0
         spacing: strip.gap
 
-        NavigationButton {
-            textSize: strip.tabTextSize
-            barStyle: strip.barStyle
-            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
-            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
+        StripControl {
             visible: strip.showArrows
-            onTooltipRequested: anchor => strip.showTooltip(anchor)
-            onTooltipDismissed: anchor => strip.hideTooltip(anchor)
             text: strip.vertical ? "↑" : "‹"
             tooltip: "Earlier windows"
             enabled: strip.scrollOffset > 0
             onClicked: strip.scrollBy(-strip.viewportLength * 0.8)
         }
 
-        NavigationButton {
-            textSize: strip.tabTextSize
-            barStyle: strip.barStyle
-            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
-            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
+        StripControl {
             visible: strip.showArrows
-            onTooltipRequested: anchor => strip.showTooltip(anchor)
-            onTooltipDismissed: anchor => strip.hideTooltip(anchor)
             text: strip.vertical ? "↓" : "›"
             tooltip: "Later windows"
             enabled: strip.scrollOffset < strip.tabLayout.totalWidth - strip.viewportLength
             onClicked: strip.scrollBy(strip.viewportLength * 0.8)
         }
 
-        NavigationButton {
-            textSize: strip.tabTextSize
-            barStyle: strip.barStyle
-            width: strip.vertical ? strip.buttonHeight : strip.controlWidth
-            height: strip.vertical ? strip.controlWidth : strip.buttonHeight
-            onTooltipRequested: anchor => strip.showTooltip(anchor)
-            onTooltipDismissed: anchor => strip.hideTooltip(anchor)
+        StripControl {
             text: "+"
             tooltip: "Open app launcher"
             enabled: strip.available

@@ -134,6 +134,9 @@ Item {
             strip.reorderBusy = false;
             strip.reorderRequest = null;
             strip.barEdge = "top";
+            strip.barThickness = 36;
+            strip.barSpacing = 0;
+            rail.visible = true;
             rail.vertical = true;
             rail.maximumWidth = 600;
             rail.pickerRequest = null;
@@ -159,6 +162,8 @@ Item {
 
         function cleanup() {
             adapter.cancelReorder();
+            strip.hideTooltip(null);
+            strip.parentScreen = null;
             Theme.snapListModelChanges = true;
         }
 
@@ -439,6 +444,116 @@ Item {
                             display: "rotated"
                         }
                     ];
+        }
+
+        function test_pointer_drag_data() {
+            return [
+                        {
+                            tag: "horizontal",
+                            vertical: false,
+                            display: "icons",
+                            edge: "top"
+                        },
+                        {
+                            tag: "vertical-icons",
+                            vertical: true,
+                            display: "icons",
+                            edge: "left"
+                        },
+                        {
+                            tag: "vertical-titles",
+                            vertical: true,
+                            display: "titles",
+                            edge: "left"
+                        },
+                        {
+                            tag: "rotated-left",
+                            vertical: true,
+                            display: "rotated",
+                            edge: "left"
+                        },
+                        {
+                            tag: "rotated-right",
+                            vertical: true,
+                            display: "rotated",
+                            edge: "right"
+                        }
+                    ];
+        }
+
+        function test_pointer_drag(data) {
+            rail.visible = false;
+            strip.vertical = data.vertical;
+            strip.verticalDisplay = data.display;
+            strip.barEdge = data.edge;
+            wait(30);
+            const first = suite.tabButtons()[0];
+            const origin = first.parent.mapToItem(suite, first.parent.width / 2, first.parent.height / 2);
+            const distance = strip.tabLayout.starts[1];
+            const x = origin.x + (data.vertical ? 0 : distance);
+            const y = origin.y + (data.vertical ? distance : 0);
+            mousePress(suite, origin.x, origin.y, Qt.LeftButton);
+            try {
+                compare(strip.activations, 1, "focus on press");
+                mouseMove(suite, origin.x + (data.vertical ? 0 : 1), origin.y + (data.vertical ? 1 : 0));
+                compare(strip.dragWindowId, null, "small motion must remain a click");
+                mouseMove(suite, x, y);
+                compare(strip.dragWindowId, 1, "primary-axis pointer movement must start a drag");
+            } finally {
+                mouseRelease(suite, x, y, Qt.LeftButton);
+            }
+            compare(strip.activations, 1, "release must not activate again");
+            compare(strip.reorderRequest[0], 1);
+            compare(strip.reorderRequest[1], 2);
+            compare(strip.reorderRequest[2], true);
+        }
+
+        function test_tooltip_clears_full_bar_data() {
+            return [
+                        {
+                            tag: "top",
+                            edge: "top"
+                        },
+                        {
+                            tag: "bottom",
+                            edge: "bottom"
+                        },
+                        {
+                            tag: "left",
+                            edge: "left"
+                        },
+                        {
+                            tag: "right",
+                            edge: "right"
+                        }
+                    ];
+        }
+
+        function test_tooltip_clears_full_bar(data) {
+            strip.vertical = ["left", "right"].includes(data.edge);
+            strip.barEdge = data.edge;
+            strip.barThickness = 72;
+            strip.barSpacing = 5;
+            strip.parentScreen = {
+                name: "DP-1",
+                width: 1000,
+                height: 800
+            };
+            wait(30);
+            const button = suite.tabButtons()[0];
+            mouseMove(button, button.width / 2, button.height / 2);
+            strip.showTooltip(button);
+            verify(strip.activeTooltip !== null);
+            const tooltip = strip.activeTooltip;
+            const inset = strip.barThickness + strip.barSpacing + strip.gap;
+            if (strip.vertical) {
+                compare(tooltip.targetX, data.edge === "left" ? inset : strip.parentScreen.width - inset);
+            } else {
+                compare(tooltip.targetY, data.edge === "top" ? inset : strip.parentScreen.height - inset
+                                                               - tooltip.implicitHeight);
+            }
+            strip.hideTooltip(null);
+            strip.parentScreen = null;
         }
 
         function test_vertical_modes_and_drag(data) {
